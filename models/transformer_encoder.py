@@ -1,4 +1,4 @@
-'''Transformer Encoder blocks that contain multi-head attention modules and feed forward encoders. 
+'''Transformer blocks that contain multi-head attention modules and feed forward layers. 
 '''
 
 import os, sys
@@ -8,16 +8,16 @@ import torch
 import torch.nn as nn
 
 from .mhsa import MultiHeadAttention
-from .feedforward_block import FeedForwardEncoderBlock
+from .feedforward_block import FeedForwardBlock
 
-class TransformerEncoderBlock(nn.Module):
-    '''A single transformer encoder block.
+class TransformerBlock(nn.Module):
+    '''A single transformer block.
     '''
 
 
     def __init__(self, input_dim, projection_keys_dim, projection_values_dim, num_heads, attn_dropout_prob, feedforward_projection_dim, feedforward_dropout_prob, device):
 
-        super(TransformerEncoderBlock, self).__init__()
+        super(TransformerBlock, self).__init__()
 
         #initialize the self attention module together with a layernorm layer.
         self.multi_head_attention_block = nn.Sequential(
@@ -51,24 +51,16 @@ class TransformerEncoderBlock(nn.Module):
 
 
 
-class TransformerEncoderNetwork(nn.Sequential):
-    '''Created a network of transformers using the TransformerEncoderBlock module with the given depth.
+class TransformerNetwork(nn.Sequential):
+    '''Created a network of transformers using the TransformerBlock module with the given depth.
     '''
     
     def __init__(self, transformer_network_depth, input_dim, device, **kwargs):
 
-        super().__init__(*[TransformerEncoderBlock(input_dim=input_dim,
+        super().__init__(*[TransformerBlock(input_dim=input_dim,
                                                    device=device,
                                                    **kwargs
                                                    ) for _ in range(transformer_network_depth)])
-
-
-
-
-
-
-
-
 
 
 

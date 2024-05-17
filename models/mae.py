@@ -7,12 +7,21 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch.nn as nn
 from .patch_embed import PatchEmbed
-from .transformer_encoder import TransformerEncoderNetwork
+from .transformer_encoder import TransformerNetwork 
+from .random_masking import RandomMasking
 
 
 
 class MaskedAutoEncoder(nn.Module):
     '''Implementation of MAE with ViT.
+        The strategy of random masking in MAE is:
+            1) Randomly (normal dist) shuffle the embedded patches on patch level.
+            2) Remove the last N patches based on the mask ratio.
+            3) Use the remaining patches as input to the encoder.
+            4) The output from the encoder will be then appended with mask tokens (the overall length of this output now will equal to the original length of the patch embedding vector).
+            5) Then, this new vector will be unshuffled back to the original positions from before 1). The result will be mask tokens at places where the original elements were removed, and MAE's encoder's output at the non-removed elements.
+            6) The decoder will take the vector from 5) as input and predict a vector of the original size input before 1).
+            7) Finally, the output from decoder will be masked so that only the unmasked patches/pixels are compared for the loss.
     '''
 
     def __init__(self, 
@@ -22,11 +31,14 @@ class MaskedAutoEncoder(nn.Module):
                  decoder_embedding_dim, 
                  encoder_transformer_blocks_depth, 
                  decoder_transformer_blocks_depth, 
+                 masking_ratio,
                  device, **kwargs):
 
         '''Init variables.
         '''
 
+        self.random_masking = RandomMasking(masking_ratio=masking_ratio,
+                                         device=device)
 
         #----------------------- Encoder -------------------------
         self.patch_embed = PatchEmbed(patch_size=patch_size, 
@@ -45,7 +57,7 @@ class MaskedAutoEncoder(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)) 
         
 
-        self.encoder_transformer_blocks = TransformerEncoderNetwork(device=device,
+        self.encoder_transformer_blocks = TransformerNetwork(device=device,
                                                             input_dim=encoder_embedding_dim,
                                                             transformer_network_depth=encoder_transformer_blocks_depth,
                                                             **kwargs).to(device)
@@ -59,9 +71,9 @@ class MaskedAutoEncoder(nn.Module):
         self.decoder_embed = nn.Linear(encoder_embedding_dim, decoder_embedding_dim, bias=True)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim))
-        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim))
+        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)) #+1 for the cls token at dim 1.
 
-        self.decoder_transformer_blocks = TransformerEncoderNetwork(device=device,
+        self.decoder_transformer_blocks = TransformerNetwork(device=device,
                                                                     input_dim=decoder_embedding_dim,
                                                                     transformer_network_depth=decoder_transformer_blocks_depth,
                                                                     **kwargs).to(device)
@@ -98,16 +110,6 @@ class MaskedAutoEncoder(nn.Module):
         torch.nn.init.trunc_normal_(self.decoder_pos_embed.weights, std=self.init_std)
     
 
-    def random_masking(self, x, mask_ratio):
-        '''The strategy of random masking in MAE is:
-            1) Randomly (normal dist) shuffle the embedded patches on patch level.
-            2) Remove the last N patches based on the mask ratio.
-            3) Use the remaining patches as input to the encoder.
-            4) The output from the encoder will be then appended with mask tokens (the overall length of this output now will equal to the original length of the patch embedding vector).
-            5) Then, this new vector will be unshuffled back to the original positions from before 1). The result will be mask tokens at places where the original elements were removed, and MAE's encoder's output at the non-removed elements.
-            6) The decoder will take the vector from 5) as input and predict a vector of the original size input before 1).
-            7) Finally, the output from decoder will be masked so that only the unmasked patches/pixels are compared for the loss.
-        '''
     
     def forward_encoder(self, x, mask_ratio=None):
         '''Forward propagation for the encoder module.
@@ -117,6 +119,42 @@ class MaskedAutoEncoder(nn.Module):
 
         x = x + self.encoder_pos_embed[:, 1:, :] #the cls token is not yet appended to the patch embedding. We will add the cls token after masking. Hence the pos embed is excluded of the cls token index as well.
 
+        x, mask, idxs_reverse_shuffle  = self.random_masking(x) #perform random masking per batch.
+
+        #append cls token
+        cls_token = self.cls_token + self.encoder_pos_embed[:, :1, :] #add the positional embedding for cls token only.
+        cls_token = cls_token.expand(x.shape[0], -1, -1) #-1 means not changing the size of that dimension.
+        x = torch.cat((cls_token, x), dim=1)
+
+        x = self.encoder_transformer_blocks(x)
+
+        x = self.encoder_norm(x)
+
+        return x, mask, idxs_reverse_shuffle
+
+
+    
+    def forward_decoder(self, x, idxs_reverse_shuffle):
+        '''Forward propagation of the decoder module.
+        '''
+
+        x = self.decoder_embed(x) #linear projection
+
+        #mask tokens need to be appended at the masked positions. This is the reason why we need the indices to reverse the shuffle.
+        mask_tokens = self.mask_token.repeat(x.shape[0], idxs_reverse_shuffle.shape[1] + 1 - x.shape[1], 1) #in the 2nd element, we add 1 since x has cls token in it. So it's done to counteract that.
+        x_ = torch.cat(x[:, 1:, :], dim=1) #without CLS token.
+        x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, ,1 x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
+        x = torch.cat(x[:, :1, :], x_], dim=1) #append back the CLS token from the original x.
+
+        x = x + self.decoder_pos_embed 
+
+        x = self.decoder_transformer_blocks(x)
+
+        x = self.decoder_norm(x)
+        
+        x = x[:, 1:, :] #remove cls token for the pretraining.
+
+        return x
 
 
 
