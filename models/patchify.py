@@ -26,8 +26,10 @@ class Patchify:
         patched_image_tensors = self.unfolding_func(imgs)
 
         rearranged_image_tensors = self.einops_ops(patched_image_tensors)
+        #rearranged_image_tensors = torch.einsum('bep -> bpe', patched_image_tensors)
 
         return rearranged_image_tensors
+        #return patched_image_tensors
     
 
     def patchify(self, imgs):
@@ -39,8 +41,8 @@ class Patchify:
         assert imgs.shape[2] == imgs.shape[3] and imgs.shape[2] % p == 0
 
         h = w = imgs.shape[2] // p
-        x = imgs.reshape(shape=(imgs.shape[0], 3, h, p, w, p))
-        x = torch.einsum('nchpwq->nhwpqc', x)
+        x = imgs.reshape(shape=(imgs.shape[0], 3, h, w, p, p))
+        x = torch.einsum('nchwpq->nhwpqc', x)
         x = x.reshape(shape=(imgs.shape[0], h * w, p**2 * 3))
         return x
 
@@ -55,6 +57,8 @@ if __name__ == '__main__':
 
     x = p(imgs)
     print(x.size())
+    y = p.patchify(imgs)
+    print(torch.equal(x, y))
 
     
 
