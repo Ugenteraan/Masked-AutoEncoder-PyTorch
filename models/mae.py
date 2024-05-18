@@ -32,11 +32,13 @@ class MaskedAutoEncoder(nn.Module):
                  encoder_transformer_blocks_depth, 
                  decoder_transformer_blocks_depth, 
                  masking_ratio,
+                 normalize_pixel,
                  device, **kwargs):
 
         '''Init variables.
         '''
 
+        self.normalize_pixel = normalize_pixel
         self.random_masking = RandomMasking(masking_ratio=masking_ratio,
                                          device=device)
 
@@ -44,7 +46,6 @@ class MaskedAutoEncoder(nn.Module):
         self.patch_embed = PatchEmbed(patch_size=patch_size, 
                                       image_depth=image_depth, 
                                       embedding_dim=encoder_embedding_dim, 
-                                      init_std=0.02,
                                       device=device)
 
         self.num_patches = self.patch_embed.num_patches 
@@ -93,7 +94,7 @@ class MaskedAutoEncoder(nn.Module):
         
         
         if isinstance(m, nn.Linear):
-            torch.nn.init.xavier_uniform_(m.weight, std=self.std_init)
+            torch.nn.init.trunc_normal_(m.weight, std=self.std_init)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
@@ -111,7 +112,7 @@ class MaskedAutoEncoder(nn.Module):
     
 
     
-    def forward_encoder(self, x, mask_ratio=None):
+    def forward_encoder(self, x):
         '''Forward propagation for the encoder module.
         '''
 
@@ -155,15 +156,38 @@ class MaskedAutoEncoder(nn.Module):
         x = x[:, 1:, :] #remove cls token for the pretraining.
 
         return x
+    
 
+    def loss_calc(self, imgs, preds, masks):
+        '''Calculates the loss of MAE.
+        '''
 
-
+        targets = self.patch_embed.get_non_overlapping_patches(imgs) #patched tensors without the linear projection.
         
-
-
+        if self.normalize_pixel:
+            mean = targets.mean(dim=-1, keepdim=True)
+            var = targets.var(dim=-1, keepdim=True)
+            target = (target-mean)/(var + 1.e-6)**.5 #the epsilon number was referenced from the official MAE implementation.
         
-
-
+        loss = (pred - target)**2
+        loss = loss.mean(dim=-1)
         
+        #Remember, we only want the loss to be calculated at the masked areas. Hence the mask multiplication.
+        loss = (loss * masks).sum() / masks.sum()
+        return loss
+
+
+    
+    def forward(self, x):
+
+        latent, masks, idxs_reverse_shuffle = self.forward_encoder(x)
+
+        preds = self.forward_decoder(x=latent, idxs_reverse_shuffle)
+
+        loss = self.loss_calc(imgs=x, preds=preds, masks=masks)
+        
+        return loss, preds, masks
+
+
 
 

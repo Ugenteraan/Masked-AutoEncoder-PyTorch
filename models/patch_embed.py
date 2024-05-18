@@ -41,7 +41,7 @@ class PatchEmbed(nn.Module):
         
         self.unfolding_func = nn.Unfold(kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size))
         self.einops_rearrange = einops_torch.Rearrange('b e p -> b p e') #this is to change the position of the embedding and the number of patches dimension after Unfold.
-        self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim) #to linearly project the patches. 
+        self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim, bias=True) #to linearly project the patches. 
 
 
     def get_non_overlapping_patches(self, imgs):
@@ -49,9 +49,22 @@ class PatchEmbed(nn.Module):
             Perform the unfolding operation and return the patch without the linear projection. This function can be used by the loss calculation module later.
         '''
         
-        patched_image_tensors =  
+        patched_image_tensors = self.unfolding_func(imgs)
+        rearranged_tensors = self.einops_rearrange(patched_image_tensors) 
+        self.num_patches = rearranged_tensors.shape[-2]
+
+        return rearranged_tensors
+    
+    
+    def __call_(self, imgs):
+        '''Creates linear projection out of the patches from the images.
+        '''
+
+        patched_image_tensors = self.get_non_overlapping_patches(imgs)
+        linear_projected_patches = self.patch_linear_layer(patched_image_tensors)
 
 
+        return linear_projected_patches
 
 
 
