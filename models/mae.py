@@ -5,6 +5,7 @@
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import torch
 import torch.nn as nn
 from .patch_embed import PatchEmbed
 from .transformer_encoder import TransformerNetwork 
@@ -27,6 +28,7 @@ class MaskedAutoEncoder(nn.Module):
     def __init__(self, 
                  patch_size, 
                  image_size, 
+                 image_depth,
                  encoder_embedding_dim, 
                  decoder_embedding_dim, 
                  encoder_transformer_blocks_depth, 
@@ -39,10 +41,14 @@ class MaskedAutoEncoder(nn.Module):
                  encoder_mlp_ratio,
                  decoder_mlp_ratio,
                  attn_dropout_prob,
-                 feedforward_dropout_prob):
+                 feedforward_dropout_prob,
+                 logger=None,
+                 init_std=0.02):
 
         '''Init variables.
         '''
+
+        super(MaskedAutoEncoder, self).__init__()
 
         self.normalize_pixel = normalize_pixel
         self.random_masking = RandomMasking(masking_ratio=masking_ratio,
@@ -54,7 +60,7 @@ class MaskedAutoEncoder(nn.Module):
                                       embedding_dim=encoder_embedding_dim, 
                                       device=device)
 
-        self.num_patches = self.patch_embed.num_patches 
+        self.num_patches = image_size//patch_size 
         self.init_std = init_std
 
         
@@ -154,8 +160,8 @@ class MaskedAutoEncoder(nn.Module):
         #mask tokens need to be appended at the masked positions. This is the reason why we need the indices to reverse the shuffle.
         mask_tokens = self.mask_token.repeat(x.shape[0], idxs_reverse_shuffle.shape[1] + 1 - x.shape[1], 1) #in the 2nd element, we add 1 since x has cls token in it. So it's done to counteract that.
         x_ = torch.cat(x[:, 1:, :], dim=1) #without CLS token.
-        x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, ,1 x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
-        x = torch.cat(x[:, :1, :], x_], dim=1) #append back the CLS token from the original x.
+        x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, 1, x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
+        x = torch.cat(x[:, :1, :], x_, dim=1) #append back the CLS token from the original x.
 
         x = x + self.decoder_pos_embed 
 
@@ -192,7 +198,7 @@ class MaskedAutoEncoder(nn.Module):
 
         latent, masks, idxs_reverse_shuffle = self.forward_encoder(x)
 
-        preds = self.forward_decoder(x=latent, idxs_reverse_shuffle)
+        preds = self.forward_decoder(x=latent, idxs_reverse_shuffle=idxs_reverse_shuffle)
 
         loss = self.loss_calc(imgs=x, preds=preds, masks=masks)
         

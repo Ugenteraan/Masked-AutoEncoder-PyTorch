@@ -66,18 +66,12 @@ class LoadDeepLakeDataset:
 
         if self.mode == 'train':
             dataloader = deeplake_dataset.dataloader().transform({'images':self.training_transformation(),
-                                                                   'labels':None})
-                                                                 .batch(self.batch_size)
-                                                                 .shuffle(self.shuffle)
-                                                                 .pytorch(collate_fn=self.collate_fn, 
-                                                                          decode_method={'images':'pil'})
+                                                                   'labels':None}).batch(self.batch_size).shuffle(self.shuffle).pytorch(collate_fn=self.collate_fn, 
+                                                                                                                                        decode_method={'images':'pil'})
         else:
             dataloader = deeplake_dataset.dataloader().transform({'images':self.testing_transformation(),
-                                                                  'labels':None})
-                                                                 .batch(self.batch_size)
-                                                                 .shuffle(self.shuffle)
-                                                                 .pytorch(collate_fn=self.collate_fn,
-                                                                          decode_method={'images':'pil'})
+                                                                  'labels':None}).batch(self.batch_size).shuffle(self.shuffle).pytorch(collate_fn=self.collate_fn,
+                                                                                                                                       decode_method={'images':'pil'})
 
         return dataloader
 

@@ -6,8 +6,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tqdm import tqdm
 import datetime
-import loguru
-
+from loguru import logger
+import argparse
+import yaml
+import torch
 import torch.nn as nn
 
 
@@ -16,7 +18,10 @@ from load_dataset import LoadDeepLakeDataset
 from init_optim import InitOptimWithSGDR
 import cred
 
-def main():
+def main(args):
+
+
+    DATETIME_NOW = datetime.datetime.now().replace(second=0, microsecond=0) #datetime without seconds & miliseconds.
 
     #Read the config file from args.
     with open(args.config, 'r') as configfile:
@@ -110,6 +115,7 @@ def main():
     
     MAE_MODEL = MaskedAutoEncoder(patch_size=PATCH_SIZE, 
                                   image_size=IMAGE_SIZE, 
+                                  image_depth=IMAGE_DEPTH,
                                   encoder_embedding_dim=ENCODER_EMBEDDING_DIM, 
                                   decoder_embedding_dim=DECODER_EMBEDDING_DIM, 
                                   encoder_transformer_blocks_depth=ENCODER_TRANSFORMER_BLOCKS_DEPTH, 
@@ -122,7 +128,7 @@ def main():
                                   encoder_num_heads=ENCODER_NUM_HEADS,
                                   decoder_num_heads=DECODER_NUM_HEADS, 
                                   attn_dropout_prob=ATTN_DROPOUT_PROB,
-                                  feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB
+                                  feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
                                   logger=logger).to(DEVICE)
     
     
@@ -185,4 +191,8 @@ def main():
 
 if __name__ == '__main__':
 
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', required=True, type=str, help='Specify the YAML config file to be used.')
+    parser.add_argument('--logging_config', required=True, type=str, help='Specify the YAML config file to be used for the logging module.')
+    args = parser.parse_args()
+    main(args)
