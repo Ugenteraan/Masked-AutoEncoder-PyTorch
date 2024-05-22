@@ -11,6 +11,11 @@ import loguru
 import torch.nn as nn
 
 
+from models.mae import MaskedAutoEncoder
+from load_dataset import LoadDeepLakeDataset
+from init_optim import InitOptimWithSGDR
+import cred
+
 def main():
 
     #Read the config file from args.
@@ -60,6 +65,7 @@ def main():
     SHUFFLE = config['data']['shuffle']
     USE_RANDOM_HORIZONTAL_FLIP = config['data']['use_random_horizontal_flip']
     NORMALIZE_PIXEL = config['data']['normalize_pixel']
+    DEEPLAKE_DS_NAME = config['data']['deeplake_ds_name']
 
 
     #Mask configurations.
@@ -102,22 +108,67 @@ def main():
 
     logger.info("Init MAE model...")
     
-    MAE_MODEL = MaskedAutoEncoder( 
-                                     patch_size=PATCH_SIZE, 
-                                     image_size=IMAGE_SIZE, 
-                                     encoder_embedding_dim=ENCODER_EMBEDDING_DIM, 
-                                     decoder_embedding_dim=DECODER_EMBEDDING_DIM, 
-                                     encoder_transformer_blocks_depth=ENCODER_TRANSFORMER_BLOCKS_DEPTH, 
-                                     decoder_transformer_blocks_depth=DECODER_TRANSFORMER_BLOCKS_DEPTH, 
-                                     masking_ratio=MASKING_RATIO,
-                                     normalize_pixel=NORMALIZE_PIXEL,
-                                     device=DEVICE,
-                                     encoder_mlp_ratio=ENCODER_MLP_RATIO, 
-                                     decoder_mlp_ratio=DECODER_MLP_RATIO,
-                                     encoder_num_heads=ENCODER_NUM_HEADS,
-                                     decoder_num_heads=DECODER_NUM_HEADS,
-                                     attn_dropout_prob=ATTN_DROPOUT_PROB,
-                                     feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB)
+    MAE_MODEL = MaskedAutoEncoder(patch_size=PATCH_SIZE, 
+                                  image_size=IMAGE_SIZE, 
+                                  encoder_embedding_dim=ENCODER_EMBEDDING_DIM, 
+                                  decoder_embedding_dim=DECODER_EMBEDDING_DIM, 
+                                  encoder_transformer_blocks_depth=ENCODER_TRANSFORMER_BLOCKS_DEPTH, 
+                                  decoder_transformer_blocks_depth=DECODER_TRANSFORMER_BLOCKS_DEPTH, 
+                                  masking_ratio=MASKING_RATIO,
+                                  normalize_pixel=NORMALIZE_PIXEL,
+                                  device=DEVICE,
+                                  encoder_mlp_ratio=ENCODER_MLP_RATIO, 
+                                  decoder_mlp_ratio=DECODER_MLP_RATIO,
+                                  encoder_num_heads=ENCODER_NUM_HEADS,
+                                  decoder_num_heads=DECODER_NUM_HEADS, 
+                                  attn_dropout_prob=ATTN_DROPOUT_PROB,
+                                  feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB
+                                  logger=logger).to(DEVICE)
+    
+    
+    DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
+                                              deeplake_ds_name=f"{DEEPLAKE_DS_NAME}-train",
+                                              image_height=IMAGE_HEIGHT,
+                                              image_width=IMAGE_WIDTH,
+                                              batch_size=BATCH_SIZE, 
+                                              shuffle=SHUFFLE,
+                                              use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
+                                              mode='train',
+                                              logger=logger)
+
+   
+    #this module contains the init for optimizer and schedulers.
+    OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
+                                             autoencoder_model=MAE_MODEL,
+                                             cosine_upper_bound_lr=COSINE_UPPER_BOUND_LR,
+                                             cosine_lower_bound_lr=COSINE_LOWER_BOUND_LR,
+                                             warmup_start_lr=WARMUP_START_LR,
+                                             warmup_steps=WARMUP_STEPS,
+                                             num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*iterations_per_epoch,
+                                             cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
+                                             cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
+                                             logger=logger
+                                            )
+
+    OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
+    SCALER = None
+
+    if USE_BFLOAT16:
+        SCALER = torch.cuda.amp.GradScaler()
+
+
+    
+
+    for epoch_idx in range(START_EPOCH, END_EPOCH):
+
+        epoch_loss = 0
+
+        for idx, data in tqdm(enumerate(DEEPLAKE_DATALOADER)):
+
+            print(data)
+            break
+
+
                                      
                                   
                                      

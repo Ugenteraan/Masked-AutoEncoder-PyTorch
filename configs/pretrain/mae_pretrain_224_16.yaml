@@ -9,6 +9,7 @@ data:
   shuffle: true
   use_random_horizontal_flip: false
   normalize_pixel: true
+  deeplake_ds_name: 'imagenet'
 
 mask:
   patch_size: 16
