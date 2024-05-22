@@ -56,11 +56,11 @@ class PatchEmbed(nn.Module):
         return rearranged_tensors
     
     
-    def __call_(self, imgs):
+    def forward(self, x):
         '''Creates linear projection out of the patches from the images.
         '''
 
-        patched_image_tensors = self.get_non_overlapping_patches(imgs)
+        patched_image_tensors = self.get_non_overlapping_patches(x)
         linear_projected_patches = self.patch_linear_layer(patched_image_tensors)
 
 

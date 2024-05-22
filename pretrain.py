@@ -171,9 +171,14 @@ def main(args):
 
         for idx, data in tqdm(enumerate(DEEPLAKE_DATALOADER)):
 
-            print(data)
+            images = data['images'].to(DEVICE)
+            
+            loss, preds, masks = MAE_MODEL(x=images)
+            
+            print(loss)
+        
             break
-
+        
 
                                      
                                   

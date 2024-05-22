@@ -60,14 +60,14 @@ class MaskedAutoEncoder(nn.Module):
                                       embedding_dim=encoder_embedding_dim, 
                                       device=device)
 
-        self.num_patches = image_size//patch_size 
+        self.num_patches = (image_size//patch_size)**2
         self.init_std = init_std
 
         
         #we initialize with zeros because we will be populating them later with normal distribution or any other dist.
         self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim)) 
         #we will be using learnable parameters as positional embedding vector. The +1 is for the CLS token.
-        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)) 
+        self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)) 
         
 
         self.encoder_transformer_blocks = TransformerNetwork(device=device,
@@ -99,7 +99,7 @@ class MaskedAutoEncoder(nn.Module):
         
         self.decoder_norm = nn.LayerNorm(decoder_embedding_dim).to(device)
 
-        self.decoder_output = nn.Linear(decoder_embedding_dim, self.num_patches**2 * image_depth, bias=True)
+        self.decoder_output = nn.Linear(decoder_embedding_dim, patch_size**2 * image_depth, bias=True)
         
         self.apply(self.initialize_weights)
 
@@ -135,7 +135,7 @@ class MaskedAutoEncoder(nn.Module):
         '''
 
         x = self.patch_embed(x) #patch embedding as in traditional ViT.
-
+        
         x = x + self.encoder_pos_embed[:, 1:, :] #the cls token is not yet appended to the patch embedding. We will add the cls token after masking. Hence the pos embed is excluded of the cls token index as well.
 
         x, mask, idxs_reverse_shuffle  = self.random_masking(x) #perform random masking per batch.
@@ -161,15 +161,17 @@ class MaskedAutoEncoder(nn.Module):
 
         #mask tokens need to be appended at the masked positions. This is the reason why we need the indices to reverse the shuffle.
         mask_tokens = self.mask_token.repeat(x.shape[0], idxs_reverse_shuffle.shape[1] + 1 - x.shape[1], 1) #in the 2nd element, we add 1 since x has cls token in it. So it's done to counteract that.
-        x_ = torch.cat(x[:, 1:, :], dim=1) #without CLS token.
+        x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1) #without CLS token.
         x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, 1, x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
-        x = torch.cat(x[:, :1, :], x_, dim=1) #append back the CLS token from the original x.
+        x = torch.cat([x[:, :1, :], x_], dim=1) #append back the CLS token from the original x.
 
         x = x + self.decoder_pos_embed 
 
         x = self.decoder_transformer_blocks(x)
 
         x = self.decoder_norm(x)
+        
+        x = self.decoder_output(x)
         
         x = x[:, 1:, :] #remove cls token for the pretraining.
 
@@ -185,9 +187,9 @@ class MaskedAutoEncoder(nn.Module):
         if self.normalize_pixel:
             mean = targets.mean(dim=-1, keepdim=True)
             var = targets.var(dim=-1, keepdim=True)
-            target = (target-mean)/(var + 1.e-6)**.5 #the epsilon number was referenced from the official MAE implementation.
+            targets = (targets-mean)/(var + 1.e-6)**.5 #the epsilon number was referenced from the official MAE implementation.
         
-        loss = (pred - target)**2
+        loss = (preds - targets)**2
         loss = loss.mean(dim=-1)
         
         #Remember, we only want the loss to be calculated at the masked areas. Hence the mask multiplication.
