@@ -9,18 +9,27 @@ class LoadDeepLakeDataset:
     '''Loads a dataset from deeplake https://datasets.activeloop.ai/docs/ml/datasets/. 
     '''
 
-    def __init__(self, token, deeplake_ds_name, image_height, image_width, batch_size, shuffle, use_random_horizontal_flip, mode='train'):
+    def __init__(self, 
+                 token, 
+                 deeplake_ds_name, 
+                 image_size, 
+                 batch_size, 
+                 num_workers,
+                 shuffle, 
+                 use_random_horizontal_flip, 
+                 mode='train', 
+                 logger=None):
         '''Init variables.
         '''
 
         self.token = token
         self.deeplake_ds_name = deeplake_ds_name
         self.batch_size = batch_size
+        self.num_workers = num_workers
         self.shuffle = shuffle
         self.mode = mode
         self.use_random_horizontal_flip = use_random_horizontal_flip
-        self.image_height = image_height
-        self.image_width = image_width
+        self.image_size = image_size 
 
 
     def collate_fn(self, batch_data):
@@ -32,13 +41,12 @@ class LoadDeepLakeDataset:
             }
     
 
-    @staticmethod
-    def training_transformation():
+    def training_transformation(self):
         '''Data augmentation for the training dataset.
         '''
 
         transformation_list = [
-                                transforms.Resize((self.image_height, self.image_width)),
+                                transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
                                 transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)) #to turn grayscale arrays into compatible RGB arrays.
                                 ]
@@ -50,10 +58,9 @@ class LoadDeepLakeDataset:
         return transforms.Compose(transformation_list)
     
 
-    @staticmethod
-    def testing_transformation():
+    def testing_transformation(self):
         return  transforms.Compose([
-            transforms.Resize((cfg.IMAGE_HEIGHT, cfg.IMAGE_WIDTH)),
+            transforms.Resize((self.image_size, self.image_size)),
             transforms.ToTensor(),
             transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1))
         ])
@@ -66,11 +73,13 @@ class LoadDeepLakeDataset:
 
         if self.mode == 'train':
             dataloader = deeplake_dataset.dataloader().transform({'images':self.training_transformation(),
-                                                                   'labels':None}).batch(self.batch_size).shuffle(self.shuffle).pytorch(collate_fn=self.collate_fn, 
+                                                                   'labels':None}).batch(self.batch_size).shuffle(self.shuffle).pytorch(num_workers=self.num_workers,
+                                                                                                                                        collate_fn=self.collate_fn, 
                                                                                                                                         decode_method={'images':'pil'})
         else:
             dataloader = deeplake_dataset.dataloader().transform({'images':self.testing_transformation(),
                                                                   'labels':None}).batch(self.batch_size).shuffle(self.shuffle).pytorch(collate_fn=self.collate_fn,
+                                                                                                                                       num_workers=self.num_workers,
                                                                                                                                        decode_method={'images':'pil'})
 
         return dataloader

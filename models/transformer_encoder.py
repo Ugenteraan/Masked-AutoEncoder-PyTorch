@@ -30,7 +30,7 @@ class TransformerBlock(nn.Module):
         #initialize the feedforward block together with a layernorm layer.
         self.feedforward_block = nn.Sequential(
                                                 nn.LayerNorm(input_dim),
-                                                FeedForwardEncoderBlock(input_dim=input_dim,
+                                                FeedForwardBlock(input_dim=input_dim,
                                                                         mlp_ratio=mlp_ratio,
                                                                         feedforward_dropout_prob=feedforward_dropout_prob).to(device)
                                                 )

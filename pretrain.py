@@ -133,16 +133,16 @@ def main(args):
     
     
     DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
-                                              deeplake_ds_name=f"{DEEPLAKE_DS_NAME}-train",
-                                              image_height=IMAGE_HEIGHT,
-                                              image_width=IMAGE_WIDTH,
+                                              deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
+                                              image_size=IMAGE_SIZE,
                                               batch_size=BATCH_SIZE, 
+                                              num_workers=NUM_WORKERS,
                                               shuffle=SHUFFLE,
                                               use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
                                               mode='train',
-                                              logger=logger)
+                                              logger=logger)()
 
-   
+    iterations_per_epoch = len(DEEPLAKE_DATALOADER) 
     #this module contains the init for optimizer and schedulers.
     OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
                                              autoencoder_model=MAE_MODEL,

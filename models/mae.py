@@ -74,6 +74,7 @@ class MaskedAutoEncoder(nn.Module):
                                                             input_dim=encoder_embedding_dim,
                                                             transformer_network_depth=encoder_transformer_blocks_depth,
                                                             num_heads=encoder_num_heads,
+                                                            mlp_ratio=encoder_mlp_ratio,
                                                             attn_dropout_prob=attn_dropout_prob,
                                                             feedforward_dropout_prob=feedforward_dropout_prob).to(device)
 
@@ -92,6 +93,7 @@ class MaskedAutoEncoder(nn.Module):
                                                                     input_dim=decoder_embedding_dim,
                                                                     transformer_network_depth=decoder_transformer_blocks_depth,
                                                                     num_heads=decoder_num_heads,
+                                                                    mlp_ratio=encoder_mlp_ratio,
                                                                     attn_dropout_prob=attn_dropout_prob,
                                                                     feedforward_dropout_prob=feedforward_dropout_prob).to(device)
         
@@ -110,7 +112,7 @@ class MaskedAutoEncoder(nn.Module):
         
         
         if isinstance(m, nn.Linear):
-            torch.nn.init.trunc_normal_(m.weight, std=self.std_init)
+            torch.nn.init.trunc_normal_(m.weight, std=self.init_std)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
@@ -121,10 +123,10 @@ class MaskedAutoEncoder(nn.Module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-        torch.nn.init.trunc_normal_(self.cls_token.weights, std=self.init_std)
-        torch.nn.init.trunc_normal_(self.encoder_pos_embed.weights, std=self.init_std)
-        torch.nn.init.trunc_normal_(self.mask_token.weights, std=self.init_std)
-        torch.nn.init.trunc_normal_(self.decoder_pos_embed.weights, std=self.init_std)
+        #torch.nn.init.trunc_normal_(self.cls_token.weights, std=self.init_std)
+        #torch.nn.init.trunc_normal_(self.encoder_pos_embed.weights, std=self.init_std)
+        #torch.nn.init.trunc_normal_(self.mask_token.weights, std=self.init_std)
+        #torch.nn.init.trunc_normal_(self.decoder_pos_embed.weights, std=self.init_std)
     
 
     
