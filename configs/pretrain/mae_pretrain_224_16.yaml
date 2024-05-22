@@ -1,0 +1,47 @@
+
+environment: development
+data:
+  batch_size: 32
+  image_size: 224
+  image_depth: 3
+  dataset_folder: null
+  num_workers: 8
+  shuffle: true
+  use_random_horizontal_flip: false
+  normalize_pixel: true
+
+mask:
+  patch_size: 16
+  masking_ratio: 0.75
+
+model:
+  model_save_folder: ./artifacts/pretrain/
+  model_save_freq: 10 #save every N epoch.
+  N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
+  model_name: mae-pretrain
+  encoder_transformer_blocks_depth: 12
+  decoder_transformer_blocks_depth: 8
+  encoder_embedding_dim: 1024
+  decoder_embedding_dim: 512
+  encoder_mlp_ratio: 4
+  decoder_mlp_ratio: 4
+  encoder_num_heads: 16
+  decoder_num_heads: 16
+  attn_dropout_prob: 0
+  feedforward_dropout_prob: 0
+
+training:
+  device: gpu
+  load_checkpoint: true
+  load_checkpoint_epoch: null
+  start_epoch : 0
+  end_epoch : 5000
+  cosine_upper_bound_lr : 5.0e-5
+  cosine_lower_bound_lr : 1.0e-6
+  cosine_upper_bound_wd : 0.4
+  cosine_lower_bound_wd : 0.04
+  num_epoch_to_restart_lr : 5 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
+  warmup_start_lr : 5.0e-6 #learning rate starts here.
+  warmup_steps : 100 #iteration step. Not epoch step.
+  use_bfloat16: true
+  use_neptune: true

@@ -14,14 +14,15 @@ class MultiHeadAttention(nn.Module):
     '''Einops implementation of multi-head self attention.
     '''
 
-    def __init__(self, input_dim, projection_keys_dim, projection_values_dim, num_heads, attn_dropout_prob):
+    def __init__(self, input_dim, num_heads, attn_dropout_prob):
 
         super(MultiHeadAttention, self).__init__()
 
         self.input_dim = input_dim
-        self.projection_keys_dim = projection_keys_dim
-        self.projection_values_dim = projection_values_dim
         self.num_heads = num_heads
+        self.head_dim = input_dim//num_heads
+        self.projection_keys_dim = self.head_dim
+        self.projection_values_dim = self.head_dim
         self.attn_dropout_prob = attn_dropout_prob
 
         

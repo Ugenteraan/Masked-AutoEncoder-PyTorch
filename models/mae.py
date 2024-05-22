@@ -33,7 +33,13 @@ class MaskedAutoEncoder(nn.Module):
                  decoder_transformer_blocks_depth, 
                  masking_ratio,
                  normalize_pixel,
-                 device, **kwargs):
+                 device,
+                 encoder_num_heads,
+                 decoder_num_heads,
+                 encoder_mlp_ratio,
+                 decoder_mlp_ratio,
+                 attn_dropout_prob,
+                 feedforward_dropout_prob):
 
         '''Init variables.
         '''
@@ -61,7 +67,9 @@ class MaskedAutoEncoder(nn.Module):
         self.encoder_transformer_blocks = TransformerNetwork(device=device,
                                                             input_dim=encoder_embedding_dim,
                                                             transformer_network_depth=encoder_transformer_blocks_depth,
-                                                            **kwargs).to(device)
+                                                            num_heads=encoder_num_heads,
+                                                            attn_dropout_prob=attn_dropout_prob,
+                                                            feedforward_dropout_prob=feedforward_dropout_prob).to(device)
 
         self.encoder_norm = nn.LayerNorm(encoder_embedding_dim).to(device)
 
@@ -77,7 +85,9 @@ class MaskedAutoEncoder(nn.Module):
         self.decoder_transformer_blocks = TransformerNetwork(device=device,
                                                                     input_dim=decoder_embedding_dim,
                                                                     transformer_network_depth=decoder_transformer_blocks_depth,
-                                                                    **kwargs).to(device)
+                                                                    num_heads=decoder_num_heads,
+                                                                    attn_dropout_prob=attn_dropout_prob,
+                                                                    feedforward_dropout_prob=feedforward_dropout_prob).to(device)
         
         self.decoder_norm = nn.LayerNorm(decoder_embedding_dim).to(device)
 
