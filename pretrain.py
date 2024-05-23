@@ -17,6 +17,7 @@ from models.mae import MaskedAutoEncoder
 from load_dataset import LoadDeepLakeDataset
 from init_optim import InitOptimWithSGDR
 from utils import load_checkpoint, save_checkpoint
+from visualize_prediction import VisualizePrediction
 import cred
 
 def main(args):
@@ -77,6 +78,12 @@ def main(args):
     #Mask configurations.
     PATCH_SIZE = config['mask']['patch_size']
     MASKING_RATIO = config['mask']['masking_ratio']
+
+    #Visualization configurations.
+    VISUALIZE_BATCH_SIZE = config['visualize']['visualize_batch_size']
+    FIG_SAVEPATH = config['visualize']['fig_savepath']
+    NUM_FIGS = config['visualize']['num_figs']
+    VISUALIZE_FREQ = config['visualize']['visualize_freq']
 
     #Model configurations.
     MODEL_SAVE_FOLDER = config['model']['model_save_folder']
@@ -154,7 +161,7 @@ def main(args):
                                               mode='train',
                                               logger=logger)()
 
-    iterations_per_epoch = len(DEEPLAKE_DATALOADER) 
+    ITERATIONS_PER_EPOCH = len(DEEPLAKE_DATALOADER) 
     #this module contains the init for optimizer and schedulers.
     OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
                                              autoencoder_model=MAE_MODEL,
@@ -162,7 +169,7 @@ def main(args):
                                              cosine_lower_bound_lr=COSINE_LOWER_BOUND_LR,
                                              warmup_start_lr=WARMUP_START_LR,
                                              warmup_steps=WARMUP_STEPS,
-                                             num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*iterations_per_epoch,
+                                             num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
                                              cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
                                              cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
                                              logger=logger
@@ -184,7 +191,17 @@ def main(args):
                                                                     scaler=SCALER, 
                                                                     load_checkpoint_epoch=None, 
                                                                     logger=logger)
-      
+
+
+
+    #Initialize the visualizing module to visualize the predictions.
+    VISUALIZER = VisualizePrediction(visualize_batch_size=VISUALIZE_BATCH_SIZE, 
+                                     image_size=IMAGE_SIZE,
+                                     patch_size=PATCH_SIZE,
+                                     fig_savepath=FIG_SAVEPATH,
+                                     num_figs=NUM_FIGS)
+
+
     
     for epoch_idx in range(START_EPOCH, END_EPOCH):
         
@@ -216,7 +233,15 @@ def main(args):
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
-            
+        
+
+        if epoch_idx % VISUALIZE_FREQ == 0:
+
+            #visualize the last iteration.
+            VISUALIZER.plot(pred=preds, 
+                            target=images, 
+                            epoch_idx=epoch_idx)
+
         
         if epoch_idx % MODEL_SAVE_FREQ == 0:
             
