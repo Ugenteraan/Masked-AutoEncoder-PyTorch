@@ -32,8 +32,9 @@ class VisualizePrediction:
 
 		fig, axes = plt.subplots(nrows=self.visualize_batch_size, ncols=2)
 
-		for idx in range(pred.size(0)):
+		print("PRED: ", pred.size(), target.size())
+		# for idx in range(pred.size(0)):
 
-			predi
+			
 
 

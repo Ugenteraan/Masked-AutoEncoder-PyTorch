@@ -80,10 +80,10 @@ def main(args):
     MASKING_RATIO = config['mask']['masking_ratio']
 
     #Visualization configurations.
-    VISUALIZE_BATCH_SIZE = config['visualize']['visualize_batch_size']
-    FIG_SAVEPATH = config['visualize']['fig_savepath']
-    NUM_FIGS = config['visualize']['num_figs']
-    VISUALIZE_FREQ = config['visualize']['visualize_freq']
+    VISUALIZE_BATCH_SIZE = config['visualization']['visualize_batch_size']
+    FIG_SAVEPATH = config['visualization']['fig_savepath']
+    NUM_FIGS = config['visualization']['num_figs']
+    VISUALIZE_FREQ = config['visualization']['visualize_freq']
 
     #Model configurations.
     MODEL_SAVE_FOLDER = config['model']['model_save_folder']
@@ -204,6 +204,8 @@ def main(args):
 
     
     for epoch_idx in range(START_EPOCH, END_EPOCH):
+
+        logger.info(f"Training has started for epoch {epoch_idx}")
         
         MAE_MODEL.train() #set to train mode.
 
@@ -217,6 +219,7 @@ def main(args):
             
             loss, preds, masks = MAE_MODEL(x=images)
             
+            
             #backward and step
             if USE_BFLOAT16:
                 SCALER.scale(loss).backward()
@@ -228,6 +231,11 @@ def main(args):
             
             _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
             epoch_loss += loss.item()
+
+            #visualize the last iteration.
+            VISUALIZER.plot(pred=preds, 
+                            target=images, 
+                            epoch_idx=epoch_idx)
         
         
         
@@ -235,12 +243,12 @@ def main(args):
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
         
 
-        if epoch_idx % VISUALIZE_FREQ == 0:
+        # if epoch_idx % VISUALIZE_FREQ == 0:
 
-            #visualize the last iteration.
-            VISUALIZER.plot(pred=preds, 
-                            target=images, 
-                            epoch_idx=epoch_idx)
+        #     #visualize the last iteration.
+        #     VISUALIZER.plot(pred=preds, 
+        #                     target=images, 
+        #                     epoch_idx=epoch_idx)
 
         
         if epoch_idx % MODEL_SAVE_FREQ == 0:

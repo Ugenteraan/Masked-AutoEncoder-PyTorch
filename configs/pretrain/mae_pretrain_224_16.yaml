@@ -1,7 +1,7 @@
 
 env: development
 data:
-  batch_size: 80
+  batch_size: 16
   image_size: 224
   image_depth: 3
   dataset_folder: null
