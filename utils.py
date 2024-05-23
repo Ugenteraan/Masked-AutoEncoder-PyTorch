@@ -1,5 +1,8 @@
 '''Helper functions.
 '''
+import os
+import glob
+import torch
 
 def load_checkpoint(model_save_folder, 
                     model_name, 
@@ -72,19 +75,7 @@ def save_checkpoint(model_save_folder,
     return None
 
 
-def calculate_accuracy(predicted, target):
-    '''Calculates the accuracy of the prediction.
-    '''
 
-
-    num_data = target.size()[0]
-    predicted = torch.argmax(predicted, dim=1)
-
-    correct_pred = torch.sum(predicted == target)
-
-    accuracy = correct_pred*(num_data/100)
-
-    return accuracy.item()
 
 
 
