@@ -48,8 +48,8 @@ class LoadDeepLakeDataset:
         transformation_list = [
                                 transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                                transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)) #to turn grayscale arrays into compatible RGB arrays.
+                                transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)), #to turn grayscale arrays into compatible RGB arrays.
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                 ]
 
         
@@ -63,8 +63,8 @@ class LoadDeepLakeDataset:
         return  transforms.Compose([
             transforms.Resize((self.image_size, self.image_size)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1))
+            transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
 
