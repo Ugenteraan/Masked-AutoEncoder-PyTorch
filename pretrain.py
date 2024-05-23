@@ -16,6 +16,7 @@ import torch.nn as nn
 from models.mae import MaskedAutoEncoder
 from load_dataset import LoadDeepLakeDataset
 from init_optim import InitOptimWithSGDR
+from utils import load_checkpoint, save_checkpoint
 import cred
 
 def main(args):
@@ -109,6 +110,17 @@ def main(args):
     COSINE_LOWER_BOUND_WD = config['training']['cosine_lower_bound_wd']
     USE_BFLOAT16 = config['training']['use_bfloat16']
     USE_NEPTUNE = config['training']['use_neptune']    
+    
+    
+    if USE_NEPTUNE:
+        import neptune
+
+        NEPTUNE_RUN = neptune.init_run(
+                                        project=cred.NEPTUNE_PROJECT,
+                                        api_token=cred.NEPTUNE_API_TOKEN
+                                      )
+        #we have partially unsupported types. Hence the utils method.
+        NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
 
 
     logger.info("Init MAE model...")
@@ -162,37 +174,67 @@ def main(args):
     if USE_BFLOAT16:
         SCALER = torch.cuda.amp.GradScaler()
 
-
     
-
+    
+    if LOAD_CHECKPOINT:
+        MAE_MODEL, OPTIMIZER, SCALER, START_EPOCH = load_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
+                                                                    model_name=MODEL_NAME, 
+                                                                    mae_model=MAE_MODEL, 
+                                                                    optimizer=OPTIMIZER, 
+                                                                    scaler=SCALER, 
+                                                                    load_checkpoint_epoch=None, 
+                                                                    logger=logger)
+      
+    
     for epoch_idx in range(START_EPOCH, END_EPOCH):
+        
+        MAE_MODEL.train() #set to train mode.
 
         epoch_loss = 0
+        
 
         for idx, data in tqdm(enumerate(DEEPLAKE_DATALOADER)):
-
+            
+            OPTIMIZER.zero_grad()
             images = data['images'].to(DEVICE)
             
             loss, preds, masks = MAE_MODEL(x=images)
             
-            print(loss)
+            #backward and step
+            if USE_BFLOAT16:
+                SCALER.scale(loss).backward()
+                SCALER.step(OPTIMIZER)
+                SCALER.update()
+            else:
+                loss.backward()
+                OPTIMIZER.step()
+            
+            _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
+            epoch_loss += loss.item()
         
-            break
         
-
+        
+        if USE_NEPTUNE:
+            NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
+            
+        
+        if epoch_idx % MODEL_SAVE_FREQ == 0:
+            
+            save_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
+                    model_name=MODEL_NAME, 
+                    mae_model=MAE_MODEL, 
+                    optimizer=OPTIMIZER, 
+                    scaler=SCALER, 
+                    epoch=epoch_idx, 
+                    loss=epoch_loss, 
+                    N_models_to_keep=N_SAVED_MODEL_TO_KEEP, 
+                    logger=logger
+                    )
+        
+    if USE_NEPTUNE:
+        NEPTUNE_RUN.stop() 
                                      
                                   
-                                     
-                                     
-
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
 
