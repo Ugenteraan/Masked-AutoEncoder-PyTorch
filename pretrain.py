@@ -235,6 +235,7 @@ def main(args):
 
         
         
+        logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
