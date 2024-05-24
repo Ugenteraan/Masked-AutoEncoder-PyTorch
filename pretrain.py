@@ -11,6 +11,7 @@ import argparse
 import yaml
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 
 from models.mae import MaskedAutoEncoder
@@ -161,13 +162,19 @@ def main(args):
     #                                           mode='train',
     #                                           logger=logger)()
 
-    DATALOADER = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, 
+
+    DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, 
                                        image_size=224, 
                                        image_depth=3, 
                                        use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP, 
                                        logger=logger)
 
-    ITERATIONS_PER_EPOCH = len(DEEPLAKE_DATALOADER) 
+    DATALOADER = DataLoader(DATASET_MODULE, 
+                            batch_size=BATCH_SIZE, 
+                            shuffle=SHUFFLE, 
+                            num_workers=NUM_WORKERS)
+
+    ITERATIONS_PER_EPOCH = len(DATALOADER) 
     #this module contains the init for optimizer and schedulers.
     OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
                                              autoencoder_model=MAE_MODEL,
@@ -219,9 +226,11 @@ def main(args):
         epoch_loss = 0
         
 
-        for idx, data in tqdm(enumerate(DEEPLAKE_DATALOADER)):
+        for idx, data in tqdm(enumerate(DATALOADER)):
             
             OPTIMIZER.zero_grad()
+
+
             images = data['images'].to(DEVICE)
             
             loss, preds, inverted_masks = MAE_MODEL(x=images)
