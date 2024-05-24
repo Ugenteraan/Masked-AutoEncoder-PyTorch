@@ -33,15 +33,23 @@ class PatchEmbed(nn.Module):
     #
     #        return x
 
-    def __init__(self, patch_size, image_depth, embedding_dim, device):
+    def __init__(self, 
+                 patch_size, 
+                 image_size, 
+                 image_depth, 
+                 embedding_dim=None, 
+                 device=None):
         '''Init variables.
         '''
 
         super(PatchEmbed, self).__init__()
         
         self.unfolding_func = nn.Unfold(kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size))
+        self.folding_func = nn.Fold(output_size=(image_size, image_size), kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size))
         self.einops_rearrange = einops_torch.Rearrange('b e p -> b p e') #this is to change the position of the embedding and the number of patches dimension after Unfold.
-        self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim, bias=True) #to linearly project the patches. 
+        
+        if not embedding_dim is None:
+            self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim, bias=True) #to linearly project the patches. 
 
 
     def get_non_overlapping_patches(self, imgs):
@@ -55,11 +63,21 @@ class PatchEmbed(nn.Module):
 
         return rearranged_tensors
     
+    def make_patches_into_images(self, patches):
+        '''Reverses the get_non_overlapping_patches(...) method.
+        '''
+        
+        rearranged_patches = self.einops_rearrange(patches)
+        images = self.folding_func(rearranged_patches)
+        
+        return images
+        
+    
     
     def forward(self, x):
         '''Creates linear projection out of the patches from the images.
         '''
-
+        
         patched_image_tensors = self.get_non_overlapping_patches(x)
         linear_projected_patches = self.patch_linear_layer(patched_image_tensors)
 
@@ -67,4 +85,18 @@ class PatchEmbed(nn.Module):
         return linear_projected_patches
 
 
-
+    
+    
+#used this to verify the correctness of the patching and un-patching operation implemented.
+# if __name__ == '__main__':
+    
+#     x = torch.randn((2, 3, 224, 224))
+    
+#     p = PatchEmbed(patch_size=16, image_size=224, image_depth=3, embedding_dim=768, device=torch.device('cpu'))
+    
+#     x_ = p.get_non_overlapping_patches(imgs=x)
+#     print(x_.size())
+#     y = p.make_patches_into_images(x_)
+#     print(y.size())
+    
+#     print(torch.equal(x, y))

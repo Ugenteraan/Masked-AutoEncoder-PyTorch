@@ -197,6 +197,7 @@ def main(args):
     #Initialize the visualizing module to visualize the predictions.
     VISUALIZER = VisualizePrediction(visualize_batch_size=VISUALIZE_BATCH_SIZE, 
                                      image_size=IMAGE_SIZE,
+                                     image_depth=IMAGE_DEPTH,
                                      patch_size=PATCH_SIZE,
                                      fig_savepath=FIG_SAVEPATH,
                                      num_figs=NUM_FIGS)
@@ -217,7 +218,7 @@ def main(args):
             OPTIMIZER.zero_grad()
             images = data['images'].to(DEVICE)
             
-            loss, preds, masks = MAE_MODEL(x=images)
+            loss, preds, inverted_masks = MAE_MODEL(x=images)
             
             
             #backward and step
@@ -232,10 +233,6 @@ def main(args):
             _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
             epoch_loss += loss.item()
 
-            #visualize the last iteration.
-            VISUALIZER.plot(pred=preds, 
-                            target=images, 
-                            epoch_idx=epoch_idx)
         
         
         
@@ -243,12 +240,13 @@ def main(args):
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
         
 
-        # if epoch_idx % VISUALIZE_FREQ == 0:
+        if epoch_idx % VISUALIZE_FREQ == 0:
 
-        #     #visualize the last iteration.
-        #     VISUALIZER.plot(pred=preds, 
-        #                     target=images, 
-        #                     epoch_idx=epoch_idx)
+            #visualize the last iteration.
+            VISUALIZER.plot(pred_tensor=preds.detach(), 
+                            target_tensor=images.detach(), 
+                            inverted_masks=inverted_masks.detach(),
+                            epoch_idx=epoch_idx)
 
         
         if epoch_idx % MODEL_SAVE_FREQ == 0:

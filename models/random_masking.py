@@ -40,9 +40,9 @@ class RandomMasking:
         x_masked = torch.gather(x, dim=1, index=idxs_to_keep.unsqueeze(-1).repeat(1, 1, embedding_dim)) #we need to repeat the idx_to_keep in the last dimension to match tensor x.
 
         #during the loss calculation, only the masked patches will be used. To do that, we need a mask. It'll be way easier if the mask is generated here itself.
-        mask = torch.ones([batch_num, patch_num], device=self.device) #1 means keep, 0 means mask away.
-        mask[:, :len_keep] = 0 #mask according to ratio first.
-        mask = torch.gather(mask, dim=1, index=idxs_reverse_shuffle) #invert the shuffle so we get the masks at the appropriate locations.
+        inverted_masks = torch.ones([batch_num, patch_num], device=self.device) #1 means keep, 0 means mask away.
+        inverted_masks[:, :len_keep] = 0 #mask according to ratio first. REMEMBER! The mask will have more 1s than 0s cause this is an inverted mask for the loss calculation. Not to actually mask the images.
+        inverted_masks = torch.gather(inverted_masks, dim=1, index=idxs_reverse_shuffle) #invert the shuffle so we get the masks at the appropriate locations.
         
-        return x_masked, mask, idxs_reverse_shuffle
+        return x_masked, inverted_masks, idxs_reverse_shuffle
 

@@ -56,6 +56,7 @@ class MaskedAutoEncoder(nn.Module):
 
         #----------------------- Encoder -------------------------
         self.patch_embed = PatchEmbed(patch_size=patch_size, 
+                                      image_size=image_size,
                                       image_depth=image_depth, 
                                       embedding_dim=encoder_embedding_dim, 
                                       device=device)
@@ -200,13 +201,13 @@ class MaskedAutoEncoder(nn.Module):
     
     def forward(self, x):
 
-        latent, masks, idxs_reverse_shuffle = self.forward_encoder(x)
+        latent, inverted_masks, idxs_reverse_shuffle = self.forward_encoder(x)
 
         preds = self.forward_decoder(x=latent, idxs_reverse_shuffle=idxs_reverse_shuffle)
 
-        loss = self.loss_calc(imgs=x, preds=preds, masks=masks)
+        loss = self.loss_calc(imgs=x, preds=preds, masks=inverted_masks)
         
-        return loss, preds, masks
+        return loss, preds, inverted_masks
 
 
 
