@@ -3,6 +3,7 @@
 
 import deeplake
 import torch
+import cv2
 from torchvision import transforms
 
 class LoadDeepLakeDataset:
@@ -86,3 +87,95 @@ class LoadDeepLakeDataset:
 
         return dataloader
 
+
+
+class LoadUnlabelledDataset(Dataset):
+    '''Loads the dataset from the given path.
+    '''
+
+    def __init__(self, dataset_folder_path, image_size=224, image_depth=3, use_random_horizontal_flip=False, logger=None):
+        '''Parameter Init.
+        '''
+
+        if dataset_folder_path is None:
+            logger.error("Dataset folder path must be provided!")
+            sys.exit()
+
+        self.dataset_folder_path = dataset_folder_path
+        self.image_size = image_size
+        self.image_depth = image_depth
+        self.image_path = self.read_folder()
+        self.logger = logger
+
+        transformation_list = [
+                                transforms.Resize((self.image_size, self.image_size)),
+                                transforms.ToTensor(),
+                                transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)), #to turn grayscale arrays into compatible RGB arrays.
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                ]
+
+        
+        if use_random_horizontal_flip:
+            transformation_list.insert(0, transforms.RandomHorizontalFlip())
+
+        self.transform = transforms.Compose(transformation_list)
+
+
+
+    def read_folder(self):
+        '''Reads the folder for the images.
+        '''
+        
+        image_path = []
+    
+        folder_path = f"{self.dataset_folder_path.rstrip('/')}/"
+
+        for x in glob.glob(folder_path + "**", recursive=True):
+
+            if not x.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                continue
+
+            image_path.append(x)
+
+        return image_path
+
+
+    def __len__(self):
+        '''Returns the total size of the data.
+        '''
+        return len(self.image_path)
+
+    def __getitem__(self, idx):
+        '''Returns a single image and its corresponding label.
+        '''
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        image_path = self.image_path[idx]
+
+        if self.logger is not None:
+            self.logger.trace(f"Reading {image_path}...")
+
+        try:
+            if self.image_depth == 1:
+                image = cv2.imread(image_path, 0)
+            else:
+                image = cv2.imread(image_path, cv2.COLOR_BGR2RGB)
+            
+            #sometimes PIl throws truncated image error. Perhaps due to the image being too big? Hence the cv2 imread.
+            image = Image.fromarray(image)
+        except Exception as err:
+            if self.logger is not None:
+                self.logger.error(f"{image_path}")
+                self.logger.error(f"Error loading image: {err}")
+            sys.exit()
+
+        image = image.resize((self.image_size, self.image_size))
+
+        if self.transform:
+            image = self.transform(image)
+
+        return {
+            'images': image
+        }

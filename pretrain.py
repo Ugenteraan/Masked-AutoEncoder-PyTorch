@@ -14,7 +14,7 @@ import torch.nn as nn
 
 
 from models.mae import MaskedAutoEncoder
-from load_dataset import LoadDeepLakeDataset
+from load_dataset import LoadDeepLakeDataset, LoadUnlabelledDataset
 from init_optim import InitOptimWithSGDR
 from utils import load_checkpoint, save_checkpoint
 from visualize_prediction import VisualizePrediction
@@ -151,15 +151,21 @@ def main(args):
                                   logger=logger).to(DEVICE)
     
     
-    DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
-                                              deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
-                                              image_size=IMAGE_SIZE,
-                                              batch_size=BATCH_SIZE, 
-                                              num_workers=NUM_WORKERS,
-                                              shuffle=SHUFFLE,
-                                              use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
-                                              mode='train',
-                                              logger=logger)()
+    # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
+    #                                           deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
+    #                                           image_size=IMAGE_SIZE,
+    #                                           batch_size=BATCH_SIZE, 
+    #                                           num_workers=NUM_WORKERS,
+    #                                           shuffle=SHUFFLE,
+    #                                           use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
+    #                                           mode='train',
+    #                                           logger=logger)()
+
+    DATALOADER = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, 
+                                       image_size=224, 
+                                       image_depth=3, 
+                                       use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP, 
+                                       logger=logger)
 
     ITERATIONS_PER_EPOCH = len(DEEPLAKE_DATALOADER) 
     #this module contains the init for optimizer and schedulers.
