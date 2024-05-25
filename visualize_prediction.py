@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+from pathlib import Path
 
 from models.patch_embed import PatchEmbed
 
@@ -33,27 +34,30 @@ class VisualizePrediction:
         '''Plot images using matplotlib.
         '''
         
-        mean=[0.485, 0.456, 0.406]
-        std=[0.229, 0.224, 0.225]
+        mean=np.asarray([0.485, 0.456, 0.406])
+        std=np.asarray([0.229, 0.224, 0.225])
         
         #plot the original image 
         plt.sca(axes[row_idx, 0])
-        original_image = np.transpose(original_image[0].cpu().numpy(), (1, 2, 0))
-        original_image = (original_image * np.asarray(std)) + np.asarray(mean)
-        plt.imshow(original_image)
+        transposed_normal_image = torch.transpose(original_image, (1,2,0))
+        denormalized_original_image = (transposed_normal_image.cpu() * std + mean) * 255
+        plt.imshow(torch.clip(denormalized_original_image, 0, 255).int())
+        plit.title("Target")
         plt.axis('off')
         
         
         plt.sca(axes[row_idx, 1])
-        masked_image = np.transpose(masked_image[0].cpu().numpy(), (1, 2, 0))
-        masked_image = (masked_image * np.asarray(std)) + np.asarray(mean)
-        plt.imshow(masked_image)
+        transposed_masked_image = torch.transpose(masked_image[0], (1,2,0))
+        denormalized_masked_image = (transposed_masked_image.cpu() * std + mean)*255
+        plt.imshow(torch.clip(denormalized_masked_image, 0, 255).int())
+        plt.title("Masked")
         plt.axis('off')
 
         plt.sca(axes[row_idx, 2])
-        pred_image = np.transpose(pred_image[0].cpu().numpy(), (1, 2, 0))
-        pred_image = (pred_image * np.asarray(std)) + np.asarray(mean)
-        plt.imshow(pred_image)
+        transposed_pred_image = torch.transpose(pred_image[0], (1,2,0))
+        denormalized_pred_image = (transposed_pred_image.cpu() * std + mean)*255
+        plt.imshow(torch.clip(denormalized_pred_image, 0, 255).int())
+        plt.title("Reconstructed")
         plt.axis('off')
 
 
@@ -96,13 +100,14 @@ class VisualizePrediction:
             
             masked_image = self.mask_target(target=target, inverted_mask=inverted_mask)
             
-            # print("SIZES:", target.size(), masked_image.size(), prediction_image.size())
-            
+
+
             self.plot_images(fig=fig, 
                              axes=axes, 
                              row_idx=idx, 
                              original_image=target, 
                              masked_image=masked_image, 
                              pred_image=prediction_image)
-            
+        
+        Path(f"{self.fig_savepath}").mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{self.fig_savepath}/visualization - {epoch_idx}.jpg')

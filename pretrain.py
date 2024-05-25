@@ -12,7 +12,7 @@ import yaml
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-
+from pathlib import Path
 
 from models.mae import MaskedAutoEncoder
 from load_dataset import LoadDeepLakeDataset, LoadUnlabelledDataset
@@ -44,6 +44,8 @@ def main(args):
 
     logging_formatter = logging_config['formatters'][config['env']] #set the environment for the logger.
 
+    
+    Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
     #to output to a file
     logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}",
                     level=logging_formatter['level'],
@@ -194,17 +196,15 @@ def main(args):
     if USE_BFLOAT16:
         SCALER = torch.cuda.amp.GradScaler()
 
-    
-    
     if LOAD_CHECKPOINT:
-        MAE_MODEL, OPTIMIZER, SCALER, START_EPOCH = load_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
+        MAE_MODEL, SCALER, START_EPOCH = load_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
                                                                     model_name=MODEL_NAME, 
                                                                     mae_model=MAE_MODEL, 
-                                                                    optimizer=OPTIMIZER, 
                                                                     scaler=SCALER, 
                                                                     load_checkpoint_epoch=None, 
                                                                     logger=logger)
-
+        for _ in range(ITERATIONS_PER_EPOCH*START_EPOCH):
+            OPTIM_AND_SCHEDULERS.step() #this is needed to restore the parameters of the optimizer. LR and WD rate.
 
 
     #Initialize the visualizing module to visualize the predictions.
@@ -233,9 +233,10 @@ def main(args):
 
             images = data['images'].to(DEVICE)
             
-            loss, preds, inverted_masks = MAE_MODEL(x=images)
-            
-            
+            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+                loss, preds, inverted_masks = MAE_MODEL(x=images)
+                
+                
             #backward and step
             if USE_BFLOAT16:
                 SCALER.scale(loss).backward()
@@ -270,7 +271,6 @@ def main(args):
             save_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
                     model_name=MODEL_NAME, 
                     mae_model=MAE_MODEL, 
-                    optimizer=OPTIMIZER, 
                     scaler=SCALER, 
                     epoch=epoch_idx, 
                     loss=epoch_loss, 

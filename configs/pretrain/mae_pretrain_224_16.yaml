@@ -5,8 +5,8 @@ data:
   image_size: 224
   image_depth: 3
   dataset_folder: ./dog_breed_classification/ssl_train/
-  num_workers: 8
-  shuffle: false
+  num_workers: 0
+  shuffle: true
   use_random_horizontal_flip: true
   normalize_pixel: true
   deeplake_ds_name: 'imagenet'
@@ -16,9 +16,9 @@ mask:
   masking_ratio: 0.75
 
 visualization:
-  visualize_batch_size: 8
+  visualize_batch_size: 5
   fig_savepath: ./figures/
-  num_figs: 10
+  num_figs: 5
   visualize_freq: 2 #visualize the predictions per N epoch.
 
 model:

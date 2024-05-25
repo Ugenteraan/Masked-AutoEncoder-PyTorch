@@ -3,11 +3,11 @@
 import os
 import glob
 import torch
+from pathlib import Path
 
 def load_checkpoint(model_save_folder, 
                     model_name, 
                     mae_model, 
-                    optimizer, 
                     scaler, 
                     load_checkpoint_epoch=None, 
                     logger=None):
@@ -22,9 +22,8 @@ def load_checkpoint(model_save_folder,
             checkpoint = torch.load(f"{model_save_folder.rstrip('/')}/{model_name}-latest.pth.tar")
 
         epoch = checkpoint['epoch']
-        logger.info("Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
+        logger.info(f"Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
 
-        optimizer.load_state_dict(checkpoint['optimizer'])
 
         if scaler is not None:
             scaler.load_state_dict(checkpoint['scaler'])    
@@ -36,7 +35,7 @@ def load_checkpoint(model_save_folder,
         logger.error(f"Error loading the model! {err}")
         epoch = 0
 
-    return mae_model, optimizer, scaler, epoch
+    return mae_model, scaler, epoch
         
 
 
@@ -44,7 +43,6 @@ def load_checkpoint(model_save_folder,
 def save_checkpoint(model_save_folder, 
                     model_name, 
                     mae_model, 
-                    optimizer, 
                     scaler, 
                     epoch, 
                     loss, 
@@ -55,13 +53,13 @@ def save_checkpoint(model_save_folder,
     '''
     save_dict = {
                 'mae_model': mae_model.state_dict(),
-                'optimizer': optimizer,
                 'scaler': scaler, 
-                'epoch': epoch, #useful for resuming training from the last epoch.
+                'epoch': epoch, #useful for resuming training from the last epoch. And also to initialize the optimizer module's step.
                 'loss' : loss #record purposes. 
                 }
     
     try:
+        Path(f"{model_save_folder}").mkdir(parents=True, exist_ok=True) #create directory if doesn't exist.yy
         torch.save(save_dict, f"{model_save_folder.rstrip('/')}/{model_name}-checkpoint-ep-{epoch}.pth.tar") 
         torch.save(save_dict, f"{model_save_folder.rstrip('/')}/{model_name}-latest.pth.tar") 
         logger.info(f"Model checkpoint save for epoch {epoch} is successful!")

@@ -65,6 +65,8 @@ class InitOptimWithSGDR:
         res = start_value + 0.5 * (end_value - start_value) * (1. + math.cos(math.pi * fraction_term))
         return res
 
+    
+
 
     def step(self):
         '''Must be executed at every iteration step (not epoch step).
