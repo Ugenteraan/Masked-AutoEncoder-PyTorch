@@ -24,6 +24,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.neptune/**
 dog_breed_classification/**
 artifacts/**
 **/cred.py
