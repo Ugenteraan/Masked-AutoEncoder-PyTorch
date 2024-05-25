@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
+
 from models.patch_embed import PatchEmbed
 
 
@@ -39,25 +40,25 @@ class VisualizePrediction:
         
         #plot the original image 
         plt.sca(axes[row_idx, 0])
-        transposed_normal_image = torch.transpose(original_image, (1,2,0))
+        transposed_normal_image = torch.einsum('chw->hwc', original_image[0])
         denormalized_original_image = (transposed_normal_image.cpu() * std + mean) * 255
         plt.imshow(torch.clip(denormalized_original_image, 0, 255).int())
-        plit.title("Target")
+        plt.title("Target", fontsize=15)
         plt.axis('off')
-        
+
         
         plt.sca(axes[row_idx, 1])
-        transposed_masked_image = torch.transpose(masked_image[0], (1,2,0))
+        transposed_masked_image = torch.einsum('chw->hwc', masked_image[0])
         denormalized_masked_image = (transposed_masked_image.cpu() * std + mean)*255
         plt.imshow(torch.clip(denormalized_masked_image, 0, 255).int())
-        plt.title("Masked")
+        plt.title("Masked", fontsize=15)
         plt.axis('off')
 
         plt.sca(axes[row_idx, 2])
-        transposed_pred_image = torch.transpose(pred_image[0], (1,2,0))
+        transposed_pred_image = torch.einsum('chw->hwc', pred_image[0])
         denormalized_pred_image = (transposed_pred_image.cpu() * std + mean)*255
         plt.imshow(torch.clip(denormalized_pred_image, 0, 255).int())
-        plt.title("Reconstructed")
+        plt.title("Reconstructed", fontsize=15)
         plt.axis('off')
 
 
@@ -87,6 +88,7 @@ class VisualizePrediction:
         '''
 
         fig, axes = plt.subplots(nrows=self.visualize_batch_size, ncols=3)
+        plt.rcParams['figure.figsize'] = [24,24]
         
         
         for idx in range(self.visualize_batch_size):

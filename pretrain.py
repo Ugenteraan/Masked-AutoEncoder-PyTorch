@@ -233,8 +233,8 @@ def main(args):
 
             images = data['images'].to(DEVICE)
             
-            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
-                loss, preds, inverted_masks = MAE_MODEL(x=images)
+            #with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+            loss, preds, inverted_masks = MAE_MODEL(x=images)
                 
                 
             #backward and step
@@ -248,6 +248,11 @@ def main(args):
             
             _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
             epoch_loss += loss.item()
+
+            # VISUALIZER.plot(pred_tensor=preds.detach(), 
+            #                 target_tensor=images.detach(), 
+            #                 inverted_masks=inverted_masks.detach(),
+            #                 epoch_idx=epoch_idx)
 
         
         
