@@ -7,7 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import einops.layers.torch as einops
+# import einops.layers.torch as einops
+import einops
 
 
 class MultiHeadAttention(nn.Module):
@@ -38,10 +39,10 @@ class MultiHeadAttention(nn.Module):
         self.W_o = nn.Linear(self.projection_values_dim, self.input_dim).to(device)
 
 
-        self.einops_rearrange_qk = einops.Rearrange('b n (h e qk) -> (qk) b h n e', h=self.num_heads, qk=2).to(device) #Einops operation to rearrange the q & k and to create the head dimension.
-        self.einops_rearrange_v = einops.Rearrange('b n (h e k) -> k b h n e', h=self.num_heads, k=1).to(device)
+        # self.einops_rearrange_qk = einops.Rearrange('b n (h e qk) -> (qk) b h n e', h=self.num_heads, qk=2).to(device) #Einops operation to rearrange the q & k and to create the head dimension.
+        # self.einops_rearrange_v = einops.Rearrange('b n (h e k) -> k b h n e', h=self.num_heads, k=1).to(device)
 
-        self.einops_mhsa_concat = einops.Rearrange('b h n e -> b n (h e)').to(device) #remember, we want to concatenate the heads together at the end.
+        # self.einops_mhsa_concat = einops.Rearrange('b h n e -> b n (h e)').to(device) #remember, we want to concatenate the heads together at the end.
 
 
     def forward(self, x):
@@ -50,8 +51,12 @@ class MultiHeadAttention(nn.Module):
         v = self.Wv(x) #get the values from the input.
 
         #apply the einops operations.
-        qk_rearranged = self.einops_rearrange_qk(qk)
-        v_rearranged = self.einops_rearrange_v(v)
+        # qk_rearranged = self.einops_rearrange_qk(qk)
+        # v_rearranged = self.einops_rearrange_v(v)
+
+        #apply einops from a diff library
+        qk_rearranged = einops.rearrange(qk, 'b n (h e qk) -> (qk) b h n e', h=self.num_heads, qk=2)
+        v_rearranged = einops.rearrange(v, 'b n (h e k) -> k b h n e', h=self.num_heads, k=1)
 
         queries, keys = qk_rearranged[0], qk_rearranged[1]
         values = v_rearranged[0]
@@ -69,7 +74,10 @@ class MultiHeadAttention(nn.Module):
         attention_qkv = torch.einsum('bhsl, bhlv -> bhsv', scaled_dot_projection, values)
 
         #concat all the heads
-        multi_head_concatenated = self.einops_mhsa_concat(attention_qkv)
+        # multi_head_concatenated = self.einops_mhsa_concat(attention_qkv)
+
+        #apply einops from a diff library
+        multi_head_concatenated = einops.rearrange(attention_qkv, 'b h n e -> b n (h e)')
         
         #project back to the original dimension.
         multi_head_projection = self.W_o(multi_head_concatenated)

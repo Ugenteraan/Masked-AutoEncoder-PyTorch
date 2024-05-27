@@ -179,20 +179,20 @@ def main(args):
 
     ITERATIONS_PER_EPOCH = len(DATALOADER) 
     #this module contains the init for optimizer and schedulers.
-    # OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
-    #                                          autoencoder_model=MAE_MODEL,
-    #                                          cosine_upper_bound_lr=COSINE_UPPER_BOUND_LR,
-    #                                          cosine_lower_bound_lr=COSINE_LOWER_BOUND_LR,
-    #                                          warmup_start_lr=WARMUP_START_LR,
-    #                                          warmup_steps=WARMUP_STEPS,
-    #                                          num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
-    #                                          cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
-    #                                          cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
-    #                                          logger=logger
-    #                                         )
+    OPTIM_AND_SCHEDULERS = InitOptimWithSGDR(
+                                             autoencoder_model=MAE_MODEL,
+                                             cosine_upper_bound_lr=COSINE_UPPER_BOUND_LR,
+                                             cosine_lower_bound_lr=COSINE_LOWER_BOUND_LR,
+                                             warmup_start_lr=WARMUP_START_LR,
+                                             warmup_steps=WARMUP_STEPS,
+                                             num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
+                                             cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
+                                             cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
+                                             logger=logger
+                                            )
 
-    # OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
-    OPTIMIZER = torch.optim.AdamW(MAE_MODEL.parameters(), lr=1.0e-5, betas=(0.9, 0.95))
+    OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
+    # OPTIMIZER = torch.optim.AdamW(MAE_MODEL.parameters(), lr=1.0e-5, betas=(0.9, 0.95))
     SCALER = None
 
     if USE_BFLOAT16:
@@ -262,6 +262,7 @@ def main(args):
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
+            
         
 
         if epoch_idx % VISUALIZE_FREQ == 0:

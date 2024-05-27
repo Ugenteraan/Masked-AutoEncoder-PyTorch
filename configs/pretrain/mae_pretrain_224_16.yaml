@@ -1,7 +1,7 @@
 
 env: development
 data:
-  batch_size: 150
+  batch_size: 160
   image_size: 224
   image_depth: 3
   dataset_folder: ./dataset/fungi_classification_ssl/
@@ -45,7 +45,7 @@ training:
   end_epoch : 10000
   cosine_upper_bound_lr : 1.0e-4
   cosine_lower_bound_lr : 1.0e-6
-  cosine_upper_bound_wd : 0.4
+  cosine_upper_bound_wd : 0.1
   cosine_lower_bound_wd : 0.04
   num_epoch_to_restart_lr : 5 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
   warmup_start_lr : 1.0e-6 #learning rate starts here.

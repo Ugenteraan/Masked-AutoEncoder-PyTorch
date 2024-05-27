@@ -42,7 +42,7 @@ class RandomMasking:
         #during the loss calculation, only the masked patches will be used. To do that, we need a mask. It'll be way easier if the mask is generated here itself.
         inverted_masks = torch.ones([batch_num, patch_num], device=self.device) #1 means keep, 0 means mask away.
         inverted_masks[:, :len_keep] = 0 #mask according to ratio first. REMEMBER! The mask will have more 1s than 0s cause this is an inverted mask for the loss calculation. Not to actually mask the images.
-        inverted_masks = torch.gather(inverted_masks, dim=1, index=idxs_reverse_shuffle) #invert the shuffle so we get the masks at the appropriate locations.
+        inverted_masks = torch.gather(inverted_masks, dim=1, index=idxs_reverse_shuffle).to(device) #invert the shuffle so we get the masks at the appropriate locations.
         
         return x_masked, inverted_masks, idxs_reverse_shuffle
 
