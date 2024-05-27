@@ -44,12 +44,12 @@ class PatchEmbed(nn.Module):
 
         super(PatchEmbed, self).__init__()
         
-        self.unfolding_func = nn.Unfold(kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size))
-        self.folding_func = nn.Fold(output_size=(image_size, image_size), kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size))
-        self.einops_rearrange = einops_torch.Rearrange('b e p -> b p e') #this is to change the position of the embedding and the number of patches dimension after Unfold.
+        self.unfolding_func = nn.Unfold(kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size)).to(device)
+        self.folding_func = nn.Fold(output_size=(image_size, image_size), kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size)).to(device)
+        self.einops_rearrange = einops_torch.Rearrange('b e p -> b p e').to(device) #this is to change the position of the embedding and the number of patches dimension after Unfold.
         
         if not embedding_dim is None:
-            self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim, bias=True) #to linearly project the patches. 
+            self.patch_linear_layer = nn.Linear(in_features=patch_size*patch_size*image_depth, out_features=embedding_dim, bias=True).to(device) #to linearly project the patches. 
 
 
     def get_non_overlapping_patches(self, imgs):

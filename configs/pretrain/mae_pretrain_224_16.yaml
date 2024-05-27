@@ -4,9 +4,9 @@ data:
   batch_size: 128
   image_size: 224
   image_depth: 3
-  dataset_folder: ./dog_breed_classification/ssl_train/
-  num_workers: 8
-  shuffle: false
+  dataset_folder: ./dataset/fungi_classification_ssl/
+  num_workers: 2
+  shuffle: true
   use_random_horizontal_flip: true
   normalize_pixel: true
   deeplake_ds_name: 'imagenet'
@@ -44,10 +44,10 @@ training:
   start_epoch : 0
   end_epoch : 10000
   cosine_upper_bound_lr : 1.0e-4
-  cosine_lower_bound_lr : 5.0e-6
+  cosine_lower_bound_lr : 1.0e-6
   cosine_upper_bound_wd : 0.4
   cosine_lower_bound_wd : 0.04
-  num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
+  num_epoch_to_restart_lr : 5 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
   warmup_start_lr : 1.0e-6 #learning rate starts here.
   warmup_steps : 100 #iteration step. Not epoch step.
   use_bfloat16: true

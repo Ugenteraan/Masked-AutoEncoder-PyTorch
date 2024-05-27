@@ -24,15 +24,17 @@ class TransformerBlock(nn.Module):
                                                         nn.LayerNorm(input_dim),
                                                         MultiHeadAttention(input_dim=input_dim,
                                                                            num_heads=num_heads,
-                                                                           attn_dropout_prob=attn_dropout_prob).to(device)
+                                                                           attn_dropout_prob=attn_dropout_prob,
+                                                                           device=device).to(device)
                                                         )
 
         #initialize the feedforward block together with a layernorm layer.
         self.feedforward_block = nn.Sequential(
                                                 nn.LayerNorm(input_dim),
                                                 FeedForwardBlock(input_dim=input_dim,
-                                                                        mlp_ratio=mlp_ratio,
-                                                                        feedforward_dropout_prob=feedforward_dropout_prob).to(device)
+                                                                 mlp_ratio=mlp_ratio,
+                                                                 feedforward_dropout_prob=feedforward_dropout_prob, 
+                                                                 device=device).to(device)
                                                 )
         
 
