@@ -36,7 +36,7 @@ artifacts/**
 *.manifest
 *.spec
 **/.swp
-logs/
+logs/**
 
 # Installer logs
 pip-log.txt
