@@ -5,8 +5,8 @@ data:
   image_size: 224
   image_depth: 3
   dataset_folder: ./dog_breed_classification/ssl_train/
-  num_workers: 0
-  shuffle: true
+  num_workers: 8
+  shuffle: false
   use_random_horizontal_flip: true
   normalize_pixel: true
   deeplake_ds_name: 'imagenet'
@@ -42,13 +42,13 @@ training:
   load_checkpoint: true
   load_checkpoint_epoch: null
   start_epoch : 0
-  end_epoch : 5000
-  cosine_upper_bound_lr : 5.0e-5
-  cosine_lower_bound_lr : 1.0e-6
+  end_epoch : 10000
+  cosine_upper_bound_lr : 1.0e-4
+  cosine_lower_bound_lr : 5.0e-6
   cosine_upper_bound_wd : 0.4
   cosine_lower_bound_wd : 0.04
-  num_epoch_to_restart_lr : 5 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
-  warmup_start_lr : 5.0e-6 #learning rate starts here.
+  num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
+  warmup_start_lr : 1.0e-6 #learning rate starts here.
   warmup_steps : 100 #iteration step. Not epoch step.
   use_bfloat16: true
   use_neptune: true

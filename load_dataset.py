@@ -116,7 +116,7 @@ class LoadUnlabelledDataset(Dataset):
         self.logger = logger
 
         transformation_list = [
-                                transforms.Resize((self.image_size, self.image_size)),
+                                # transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
                                 transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)), #to turn grayscale arrays into compatible RGB arrays.
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -161,18 +161,21 @@ class LoadUnlabelledDataset(Dataset):
             idx = idx.tolist()
 
         image_path = self.image_path[idx]
+        # self.logger.info(f"Loading {image_path} for training ...")
 
         if self.logger is not None:
             self.logger.trace(f"Reading {image_path}...")
 
         try:
-            if self.image_depth == 1:
-                image = cv2.imread(image_path, 0)
-            else:
-                image = cv2.imread(image_path, cv2.COLOR_BGR2RGB)
+            # if self.image_depth == 1:
+            #     image = cv2.imread(image_path, 0)
+            # else:
+            #     image = cv2.imread(image_path, cv2.COLOR_BGR2RGB)
             
-            #sometimes PIl throws truncated image error. Perhaps due to the image being too big? Hence the cv2 imread.
-            image = Image.fromarray(image)
+            # #sometimes PIl throws truncated image error. Perhaps due to the image being too big? Hence the cv2 imread.
+            # image = Image.fromarray(image)
+            image = Image.open(image_path).convert('RGB')
+
         except Exception as err:
             if self.logger is not None:
                 self.logger.error(f"{image_path}")
@@ -187,3 +190,31 @@ class LoadUnlabelledDataset(Dataset):
         return {
             'images': image
         }
+
+
+
+# if __name__ == '__main__':
+
+     
+#     DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path='./dog_breed_classification/ssl_train/', 
+#                                        image_size=224, 
+#                                        image_depth=3, 
+#                                        use_random_horizontal_flip=True, 
+#                                        logger=None)
+
+#     DATALOADER = DataLoader(DATASET_MODULE, 
+#                             batch_size=64, 
+#                             shuffle=True, 
+#                             num_workers=8,
+#                             pin_memory=True)
+
+
+#     for idx, data in enumerate(DATALOADER):
+
+#         images = data['images'].to(torch.device("cuda:0"))
+
+#         print(idx)
+
+
+
+

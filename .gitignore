@@ -27,7 +27,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 .neptune/**
-dog_breed_classification/**
+dataset/**
 artifacts/**
 **/cred.py
 # PyInstaller

@@ -93,7 +93,7 @@ class VisualizePrediction:
         
         for idx in range(self.visualize_batch_size):
             
-            prediction = pred_tensor[idx]
+            prediction = pred_tensor[idx].float()
             target = target_tensor[idx].unsqueeze(0)
             inverted_mask = inverted_masks[idx]
             
@@ -113,3 +113,4 @@ class VisualizePrediction:
         
         Path(f"{self.fig_savepath}").mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{self.fig_savepath}/visualization - {epoch_idx}.jpg')
+        plt.close()

@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from pathlib import Path
+# from torch.profiler import profile, record_function, ProfilerActivity
 
 from models.mae import MaskedAutoEncoder
 from load_dataset import LoadDeepLakeDataset, LoadUnlabelledDataset
@@ -151,7 +152,7 @@ def main(args):
                                   decoder_num_heads=DECODER_NUM_HEADS, 
                                   attn_dropout_prob=ATTN_DROPOUT_PROB,
                                   feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
-                                  logger=logger).to(DEVICE)
+                                  logger=logger).to(DEVICE, non_blocking=True)
     
     
     # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
@@ -197,10 +198,9 @@ def main(args):
         SCALER = torch.cuda.amp.GradScaler()
 
     if LOAD_CHECKPOINT:
-        MAE_MODEL, SCALER, START_EPOCH = load_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
+        MAE_MODEL, START_EPOCH = load_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
                                                                     model_name=MODEL_NAME, 
-                                                                    mae_model=MAE_MODEL, 
-                                                                    scaler=SCALER, 
+                                                                    mae_model=MAE_MODEL,
                                                                     load_checkpoint_epoch=None, 
                                                                     logger=logger)
         for _ in range(ITERATIONS_PER_EPOCH*START_EPOCH):
@@ -230,13 +230,14 @@ def main(args):
             
             OPTIMIZER.zero_grad()
 
-
             images = data['images'].to(DEVICE)
             
-            #with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
-            loss, preds, inverted_masks = MAE_MODEL(x=images)
+            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+                loss, preds, inverted_masks = MAE_MODEL(x=images)
                 
-                
+            
+            # SCALER.scale(loss).backward()
+            # OPTIMIZER.step()
             #backward and step
             if USE_BFLOAT16:
                 SCALER.scale(loss).backward()

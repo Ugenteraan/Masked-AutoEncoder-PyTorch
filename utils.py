@@ -8,7 +8,6 @@ from pathlib import Path
 def load_checkpoint(model_save_folder, 
                     model_name, 
                     mae_model, 
-                    scaler, 
                     load_checkpoint_epoch=None, 
                     logger=None):
     '''Loads either the latest model (if load_checkpoint_val is None) or loads the specific checkpoint.
@@ -25,17 +24,13 @@ def load_checkpoint(model_save_folder,
         logger.info(f"Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
 
 
-        if scaler is not None:
-            scaler.load_state_dict(checkpoint['scaler'])    
-
-        logger.info(f"Loaded optimizers and scalers from checkpoint...")
 
     
     except Exception as err:
         logger.error(f"Error loading the model! {err}")
         epoch = 0
 
-    return mae_model, scaler, epoch
+    return mae_model, epoch
         
 
 

@@ -66,9 +66,9 @@ class MaskedAutoEncoder(nn.Module):
 
         
         #we initialize with zeros because we will be populating them later with normal distribution or any other dist.
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim)) 
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim)).to(device) 
         #we will be using learnable parameters as positional embedding vector. The +1 is for the CLS token.
-        self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)) 
+        self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)).to(device)
         
 
         self.encoder_transformer_blocks = TransformerNetwork(device=device,
@@ -85,10 +85,10 @@ class MaskedAutoEncoder(nn.Module):
 
         #----------------------- Decoder ----------------------------
         # MAE decoder specifics
-        self.decoder_embed = nn.Linear(encoder_embedding_dim, decoder_embedding_dim, bias=True)
+        self.decoder_embed = nn.Linear(encoder_embedding_dim, decoder_embedding_dim, bias=True).to(device)
 
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim))
-        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)) #+1 for the cls token at dim 1.
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim)).to(device)
+        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)).to(device) #+1 for the cls token at dim 1.
 
         self.decoder_transformer_blocks = TransformerNetwork(device=device,
                                                                     input_dim=decoder_embedding_dim,
@@ -100,7 +100,9 @@ class MaskedAutoEncoder(nn.Module):
         
         self.decoder_norm = nn.LayerNorm(decoder_embedding_dim).to(device)
 
-        self.decoder_output = nn.Linear(decoder_embedding_dim, patch_size**2 * image_depth, bias=True)
+        self.decoder_output = nn.Linear(decoder_embedding_dim, patch_size**2 * image_depth, bias=True).to(device)
+
+        self.mse_loss = nn.MSELoss(reduction='mean').to(device)
         
         self.apply(self.initialize_weights)
 

@@ -34,7 +34,7 @@ class InitOptimWithSGDR:
 
         self.logger = logger
 
-        #we want to apply weight decay only to the weights. Not the biases. Therefore, we'll create two separate groups of params for the model.
+        # #we want to apply weight decay only to the weights. Not the biases. Therefore, we'll create two separate groups of params for the model.
         param_group = [
                     #the checks are for the bias (name variable) and it's shape (p variable) to exclude/include them.
                     { 
@@ -99,6 +99,7 @@ class InitOptimWithSGDR:
             #check for the weight decay variable so that we don't modify the bias parameter.
             if ('WD_exclude' not in group) or not group['WD_exclude']:
                 group['weight_decay'] = new_wd
+            
 
         #we are returning the lr and wd for logging purposes only. The optimizer is already updated with the new values.
         return new_lr, new_wd
