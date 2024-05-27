@@ -91,6 +91,9 @@ class VisualizePrediction:
         plt.rcParams['figure.figsize'] = [24,24]
         
         
+        if self.visualize_batch_size > pred_tensor.size(0):
+            self.visualize_batch_size = pred_tensor.size(0)
+
         for idx in range(self.visualize_batch_size):
             
             prediction = pred_tensor[idx].float()
