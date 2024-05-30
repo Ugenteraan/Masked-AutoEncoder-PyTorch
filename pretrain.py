@@ -128,7 +128,8 @@ def main(args):
 
         NEPTUNE_RUN = neptune.init_run(
                                         project=cred.NEPTUNE_PROJECT,
-                                        api_token=cred.NEPTUNE_API_TOKEN
+                                        api_token=cred.NEPTUNE_API_TOKEN,
+                                        with_id='MAE-198'
                                       )
         #we have partially unsupported types. Hence the utils method.
         NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
@@ -231,10 +232,9 @@ def main(args):
         epoch_loss = 0
         
 
-        with torch.autograd.detect_anomaly():
-            for idx, data in tqdm(enumerate(DATALOADER)):
-                
-                OPTIMIZER.zero_grad()
+        
+        try:
+            for idx, data in tqdm(enumerate(DATALOADER)):              
 
                 images = data['images'].to(DEVICE)
                 
@@ -251,19 +251,20 @@ def main(args):
                     loss.backward()
                     OPTIMIZER.step()
                 
+                OPTIMIZER.zero_grad()
                 _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
                 
                 epoch_loss += loss.item()
 
-            # torch.nn.utils.clip_grad_norm_(MAE_MODEL.parameters(), 1.0)
+                # torch.nn.utils.clip_grad_norm_(MAE_MODEL.parameters(), 1.0)
 
-            # VISUALIZER.plot(pred_tensor=preds.detach(), 
-            #                 target_tensor=images.detach(), 
-            #                 inverted_masks=inverted_masks.detach(),
-            #                 epoch_idx=epoch_idx)
+            
+            # SCHEDULER.step()
+        except Exception as err:
 
-        
-        # SCHEDULER.step()
+            logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
+            NEPTUNE_RUN.stop() 
+
 
         logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         

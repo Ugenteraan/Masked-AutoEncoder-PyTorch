@@ -45,6 +45,7 @@ class PatchEmbed(nn.Module):
 
         super(PatchEmbed, self).__init__()
         
+        self.device = device
         self.unfolding_func = nn.Unfold(kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size)).to(device)
         self.folding_func = nn.Fold(output_size=(image_size, image_size), kernel_size=(patch_size, patch_size), stride=(patch_size, patch_size)).to(device)
         # self.einops_rearrange = einops_torch.Rearrange('b e p -> b p e').to(device) #this is to change the position of the embedding and the number of patches dimension after Unfold.
@@ -62,7 +63,7 @@ class PatchEmbed(nn.Module):
         # rearranged_tensors = self.einops_rearrange(patched_image_tensors) 
         rearranged_tensors = einops.rearrange(patched_image_tensors, 'b e p -> b p e')
         
-        return rearranged_tensors
+        return rearranged_tensors.to(self.device)
     
     def make_patches_into_images(self, patches):
         '''Reverses the get_non_overlapping_patches(...) method.
@@ -72,7 +73,7 @@ class PatchEmbed(nn.Module):
         rearranged_patches = einops.rearrange(patches, 'b p e -> b e p')
         images = self.folding_func(rearranged_patches)
         
-        return images
+        return images.to(self.device)
         
     
     
@@ -84,7 +85,7 @@ class PatchEmbed(nn.Module):
         linear_projected_patches = self.patch_linear_layer(patched_image_tensors)
 
 
-        return linear_projected_patches
+        return linear_projected_patches.to(self.device)
 
 
     

@@ -5,7 +5,7 @@ data:
   image_size: 224
   image_depth: 3
   dataset_folder: ./dataset/fungi_classification_ssl/
-  num_workers: 8
+  num_workers: 4
   shuffle: true
   use_random_horizontal_flip: true
   normalize_pixel: true
@@ -49,6 +49,6 @@ training:
   cosine_lower_bound_wd : 0.04
   num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
   warmup_start_lr : 1.0e-6 #learning rate starts here.
-  warmup_steps : 100 #iteration step. Not epoch step.
+  warmup_steps : 2000 #iteration step. Not epoch step.
   use_bfloat16: true
   use_neptune: true
