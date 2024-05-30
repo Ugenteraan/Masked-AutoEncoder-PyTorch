@@ -52,14 +52,14 @@ class MaskedAutoEncoder(nn.Module):
 
         self.normalize_pixel = normalize_pixel
         self.random_masking = RandomMasking(masking_ratio=masking_ratio,
-                                         device=device)
+                                         device=device).to(device)
 
         #----------------------- Encoder -------------------------
         self.patch_embed = PatchEmbed(patch_size=patch_size, 
                                       image_size=image_size,
                                       image_depth=image_depth, 
                                       embedding_dim=encoder_embedding_dim, 
-                                      device=device)
+                                      device=device).to(device)
 
         self.num_patches = (image_size//patch_size)**2
         self.init_std = init_std
@@ -148,6 +148,7 @@ class MaskedAutoEncoder(nn.Module):
         cls_token = cls_token.expand(x.shape[0], -1, -1) #-1 means not changing the size of that dimension.
         x = torch.cat((cls_token, x), dim=1)
 
+
         x = self.encoder_transformer_blocks(x)
 
         x = self.encoder_norm(x)
@@ -165,6 +166,9 @@ class MaskedAutoEncoder(nn.Module):
         #mask tokens need to be appended at the masked positions. This is the reason why we need the indices to reverse the shuffle.
         mask_tokens = self.mask_token.repeat(x.shape[0], idxs_reverse_shuffle.shape[1] + 1 - x.shape[1], 1) #in the 2nd element, we add 1 since x has cls token in it. So it's done to counteract that.
         x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1) #without CLS token.
+
+        assert idxs_reverse_shuffle.max() < x_.size(1), f"Index out of bounds in random masking!{idxs_reverse_shuffle.max()}, ... {x_.size(1)}"
+
         x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, 1, x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
         x = torch.cat([x[:, :1, :], x_], dim=1) #append back the CLS token from the original x.
 

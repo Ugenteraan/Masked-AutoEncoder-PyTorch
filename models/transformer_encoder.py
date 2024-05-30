@@ -60,7 +60,7 @@ class TransformerNetwork(nn.Sequential):
         super().__init__(*[TransformerBlock(input_dim=input_dim,
                                                    device=device,
                                                    **kwargs
-                                                   ) for _ in range(transformer_network_depth)])
+                                                   ).to(device) for _ in range(transformer_network_depth)])
 
 
 

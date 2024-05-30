@@ -10,8 +10,10 @@ Important concept to note.
         '''
 
 import torch
+import torch.nn as nn
 
-class RandomMasking:
+
+class RandomMasking(nn.Module):
     '''Implemented separately to include explanations that provide more clarity on the codes.
     '''
     
@@ -19,11 +21,13 @@ class RandomMasking:
         '''Variable init.
         '''
 
+        super(RandomMasking, self).__init__()
+
         self.masking_ratio = masking_ratio
         self.device = device
 
 
-    def __call__(self, x):
+    def forward(self, x):
         '''Remember, in this case we need to perform random shuffling on the tensor and the shuffle should be done per batch (i.e. different samples, different shuffle order).
         '''
         
@@ -33,16 +37,18 @@ class RandomMasking:
 
         random_noise = torch.randn(batch_num, patch_num, device=self.device) #note that the noise is generated per batch. This is to ensure each batch gets a unique shuffling order.
 
-        idxs_random_shuffle = torch.argsort(random_noise, dim=1)
-        idxs_reverse_shuffle = torch.argsort(idxs_random_shuffle, dim=1)
+        idxs_random_shuffle = torch.argsort(random_noise, dim=1).to(self.device)
+        idxs_reverse_shuffle = torch.argsort(idxs_random_shuffle, dim=1).to(self.device)
+
+        assert len_keep <= patch_num, "len_keep exceeds the number of patches."
 
         idxs_to_keep = idxs_random_shuffle[:, :len_keep] #the subset of patches to keep. 
-        x_masked = torch.gather(x, dim=1, index=idxs_to_keep.unsqueeze(-1).repeat(1, 1, embedding_dim)) #we need to repeat the idx_to_keep in the last dimension to match tensor x.
+        x_masked = torch.gather(x, dim=1, index=idxs_to_keep.unsqueeze(-1).repeat(1, 1, embedding_dim)).to(self.device) #we need to repeat the idx_to_keep in the last dimension to match tensor x.
 
         #during the loss calculation, only the masked patches will be used. To do that, we need a mask. It'll be way easier if the mask is generated here itself.
         inverted_masks = torch.ones([batch_num, patch_num], device=self.device) #1 means keep, 0 means mask away.
         inverted_masks[:, :len_keep] = 0 #mask according to ratio first. REMEMBER! The mask will have more 1s than 0s cause this is an inverted mask for the loss calculation. Not to actually mask the images.
-        inverted_masks = torch.gather(inverted_masks, dim=1, index=idxs_reverse_shuffle).to(device) #invert the shuffle so we get the masks at the appropriate locations.
+        inverted_masks = torch.gather(inverted_masks, dim=1, index=idxs_reverse_shuffle).to(self.device) #invert the shuffle so we get the masks at the appropriate locations.
         
         return x_masked, inverted_masks, idxs_reverse_shuffle
 

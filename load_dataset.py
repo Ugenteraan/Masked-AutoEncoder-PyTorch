@@ -6,13 +6,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import os 
 import glob
-from PIL import Image, ImageOps
+from PIL import Image
 import numpy as np
 import deeplake
 import torch
 import cv2
 from torchvision import transforms
-from torch.utils.data import Dataset, dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader
 
 class LoadDeepLakeDataset:
     '''Loads a dataset from deeplake https://datasets.activeloop.ai/docs/ml/datasets/. 
@@ -116,7 +116,7 @@ class LoadUnlabelledDataset(Dataset):
         self.logger = logger
 
         transformation_list = [
-                                # transforms.Resize((self.image_size, self.image_size)),
+                                transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
                                 transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)), #to turn grayscale arrays into compatible RGB arrays.
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -161,19 +161,10 @@ class LoadUnlabelledDataset(Dataset):
             idx = idx.tolist()
 
         image_path = self.image_path[idx]
-        # self.logger.info(f"Loading {image_path} for training ...")
 
-        if self.logger is not None:
-            self.logger.trace(f"Reading {image_path}...")
 
         try:
-            # if self.image_depth == 1:
-            #     image = cv2.imread(image_path, 0)
-            # else:
-            #     image = cv2.imread(image_path, cv2.COLOR_BGR2RGB)
-            
-            # #sometimes PIl throws truncated image error. Perhaps due to the image being too big? Hence the cv2 imread.
-            # image = Image.fromarray(image)
+
             image = Image.open(image_path).convert('RGB')
 
         except Exception as err:
@@ -182,7 +173,6 @@ class LoadUnlabelledDataset(Dataset):
                 self.logger.error(f"Error loading image: {err}")
             sys.exit()
 
-        image = image.resize((self.image_size, self.image_size))
 
         if self.transform:
             image = self.transform(image)

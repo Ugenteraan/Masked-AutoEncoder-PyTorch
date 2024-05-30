@@ -192,7 +192,11 @@ def main(args):
                                             )
 
     OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
-    # OPTIMIZER = torch.optim.AdamW(MAE_MODEL.parameters(), lr=1.0e-5, betas=(0.9, 0.95))
+    # OPTIMIZER = torch.optim.AdamW(MAE_MODEL.parameters(), lr=COSINE_UPPER_BOUND_WD)
+
+    # SCHEDULER = torch.optim.lr_scheduler.LinearWarmupCosineAnnealingLR(OPTIMIZER, eta_min=COSINE_LOWER_BOUND_WD, warmup_epochs=5, max_epochs=END_EPOCH, 
+    #                                                                 warmup_start_lr=WARMUP_START_LR)
+
     SCALER = None
 
     if USE_BFLOAT16:
@@ -227,29 +231,31 @@ def main(args):
         epoch_loss = 0
         
 
-        for idx, data in tqdm(enumerate(DATALOADER)):
-            
-            OPTIMIZER.zero_grad()
-
-            images = data['images'].to(DEVICE)
-            
-            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
-                loss, preds, inverted_masks = MAE_MODEL(x=images)
+        with torch.autograd.detect_anomaly():
+            for idx, data in tqdm(enumerate(DATALOADER)):
                 
-            
-            # SCALER.scale(loss).backward()
-            # OPTIMIZER.step()
-            #backward and step
-            if USE_BFLOAT16:
-                SCALER.scale(loss).backward()
-                SCALER.step(OPTIMIZER)
-                SCALER.update()
-            else:
-                loss.backward()
-                OPTIMIZER.step()
-            
-            _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
-            epoch_loss += loss.item()
+                OPTIMIZER.zero_grad()
+
+                images = data['images'].to(DEVICE)
+                
+                with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+                    loss, preds, inverted_masks = MAE_MODEL(x=images)
+                    
+      
+                #backward and step
+                if USE_BFLOAT16:
+                    SCALER.scale(loss).backward()
+                    SCALER.step(OPTIMIZER)
+                    SCALER.update()
+                else:
+                    loss.backward()
+                    OPTIMIZER.step()
+                
+                _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
+                
+                epoch_loss += loss.item()
+
+            # torch.nn.utils.clip_grad_norm_(MAE_MODEL.parameters(), 1.0)
 
             # VISUALIZER.plot(pred_tensor=preds.detach(), 
             #                 target_tensor=images.detach(), 
@@ -257,12 +263,15 @@ def main(args):
             #                 epoch_idx=epoch_idx)
 
         
-        
+        # SCHEDULER.step()
+
         logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
-            
+            # NEPTUNE_RUN['train/lr'].append(SCHEDULER.get_lr())
+            NEPTUNE_RUN['train/lr'].append(_new_lr)
+            NEPTUNE_RUN['train/wd'].append(_new_wd)
         
 
         if epoch_idx % VISUALIZE_FREQ == 0:
@@ -292,6 +301,9 @@ def main(args):
                                   
 
 if __name__ == '__main__':
+
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', required=True, type=str, help='Specify the YAML config file to be used.')

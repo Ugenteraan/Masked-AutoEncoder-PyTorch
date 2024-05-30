@@ -61,8 +61,7 @@ class PatchEmbed(nn.Module):
         patched_image_tensors = self.unfolding_func(imgs)
         # rearranged_tensors = self.einops_rearrange(patched_image_tensors) 
         rearranged_tensors = einops.rearrange(patched_image_tensors, 'b e p -> b p e')
-        self.num_patches = rearranged_tensors.shape[-2]
-
+        
         return rearranged_tensors
     
     def make_patches_into_images(self, patches):
@@ -70,7 +69,7 @@ class PatchEmbed(nn.Module):
         '''
         
         # rearranged_patches = self.einops_rearrange(patches)
-        rearranged_tensors = einops.rearrange(patches, 'b p e -> b e p')
+        rearranged_patches = einops.rearrange(patches, 'b p e -> b e p')
         images = self.folding_func(rearranged_patches)
         
         return images
