@@ -265,7 +265,11 @@ def main(args):
         except Exception as err:
 
             logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
-            NEPTUNE_RUN.stop() 
+
+            if NEPTUNE_RUN: 
+                NEPTUNE_RUN.stop() 
+
+            sys.exit()
 
 
         logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
