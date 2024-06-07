@@ -192,12 +192,7 @@ def main(args):
                                             )
 
     OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
-    # OPTIMIZER = torch.optim.AdamW(MAE_MODEL.parameters(), lr=COSINE_UPPER_BOUND_WD)
 
-    # SCHEDULER = torch.optim.lr_scheduler.LinearWarmupCosineAnnealingLR(OPTIMIZER, eta_min=COSINE_LOWER_BOUND_WD, warmup_epochs=5, max_epochs=END_EPOCH, 
-    #                                                                 warmup_start_lr=WARMUP_START_LR)
-
-    
 
 
     SCALER = None
@@ -255,13 +250,16 @@ def main(args):
                 
                 OPTIMIZER.zero_grad()
                 _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
+
+                if NEPTUNE_RUN:
+                    NEPTUNE_RUN['train/lr'].append(_new_lr)
+                    NEPTUNE_RUN['train/wd'].append(_new_wd)
                 
                 epoch_loss += loss.item()
 
                 # torch.nn.utils.clip_grad_norm_(MAE_MODEL.parameters(), 1.0)
 
             
-            # SCHEDULER.step()
         except Exception as err:
 
             logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
@@ -276,9 +274,7 @@ def main(args):
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
-            # NEPTUNE_RUN['train/lr'].append(SCHEDULER.get_lr())
-            NEPTUNE_RUN['train/lr'].append(_new_lr)
-            NEPTUNE_RUN['train/wd'].append(_new_wd)
+            
         
 
         if epoch_idx % VISUALIZE_FREQ == 0:
