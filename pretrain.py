@@ -128,8 +128,7 @@ def main(args):
 
         NEPTUNE_RUN = neptune.init_run(
                                         project=cred.NEPTUNE_PROJECT,
-                                        api_token=cred.NEPTUNE_API_TOKEN,
-                                        with_id='MAE-198'
+                                        api_token=cred.NEPTUNE_API_TOKEN
                                       )
         #we have partially unsupported types. Hence the utils method.
         NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
@@ -197,6 +196,9 @@ def main(args):
 
     # SCHEDULER = torch.optim.lr_scheduler.LinearWarmupCosineAnnealingLR(OPTIMIZER, eta_min=COSINE_LOWER_BOUND_WD, warmup_epochs=5, max_epochs=END_EPOCH, 
     #                                                                 warmup_start_lr=WARMUP_START_LR)
+
+    
+
 
     SCALER = None
 
