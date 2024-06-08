@@ -42,36 +42,36 @@ def main(gpu, args):
         print("Configuration read successful...")
 
     
-    # with open(args.logging_config, 'r') as logging_configfile:
-    #     logging_config = yaml.load(logging_configfile, Loader=yaml.FullLoader)
-    #     print("Logging configuration file read successful...")
-    #     print("Initializing logger") 
+    with open(args.logging_config, 'r') as logging_configfile:
+        logging_config = yaml.load(logging_configfile, Loader=yaml.FullLoader)
+        print("Logging configuration file read successful...")
+        print("Initializing logger") 
     
     
-    ###Logger initialization
-    # if logging_config['disable_default_loggers']:
-    #     logger.remove(0)
+    ##Logger initialization
+    if logging_config['disable_default_loggers']:
+        logger.remove(0)
 
-    # logging_formatter = logging_config['formatters'][config['env']] #set the environment for the logger.
+    logging_formatter = logging_config['formatters'][config['env']] #set the environment for the logger.
 
     
-    # Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
-    # #to output to a file
-    # logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}--RANK_{RANK}",
-    #                 level=logging_formatter['level'],
-    #                 format=logging_formatter['format'],
-    #                 backtrace=logging_formatter['backtrace'],
-    #                 diagnose=logging_formatter['diagnose'],
-    #                 enqueue=logging_formatter['enqueue'])
+    Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
+    #to output to a file
+    logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}--RANK_{RANK}",
+                    level=logging_formatter['level'],
+                    format=logging_formatter['format'],
+                    backtrace=logging_formatter['backtrace'],
+                    diagnose=logging_formatter['diagnose'],
+                    enqueue=logging_formatter['enqueue'])
 
-    # #to output to the console.
-    # logger.add(sys.stdout,
-    #             level=logging_formatter['level'],
-    #             format=logging_formatter['format'],
-    #             backtrace=logging_formatter['backtrace'],
-    #             colorize=True,
-    #             diagnose=logging_formatter['diagnose'],
-    #             enqueue=logging_formatter['enqueue'])
+    #to output to the console.
+    logger.add(sys.stdout,
+                level=logging_formatter['level'],
+                format=logging_formatter['format'],
+                backtrace=logging_formatter['backtrace'],
+                colorize=True,
+                diagnose=logging_formatter['diagnose'],
+                enqueue=logging_formatter['enqueue'])
    
 
     #@@@@@@@@@@@@@@@@@@@@@@@@@ Extract the configurations from YAML file @@@@@@@@@@@@@@@@@@@@@@
@@ -145,7 +145,7 @@ def main(gpu, args):
             NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
 
 
-    # logger.info("Init MAE model...")
+    logger.info("Init MAE model...")
     
     MAE_MODEL = MaskedAutoEncoder(patch_size=PATCH_SIZE, 
                                   image_size=IMAGE_SIZE, 
@@ -224,7 +224,7 @@ def main(gpu, args):
                                                                     model_name=MODEL_NAME, 
                                                                     mae_model=MAE_MODEL,
                                                                     load_checkpoint_epoch=None, 
-                                                                    logger=None)
+                                                                    logger=logger)
         for _ in range(ITERATIONS_PER_EPOCH*START_EPOCH):
             OPTIM_AND_SCHEDULERS.step() #this is needed to restore the parameters of the optimizer. LR and WD rate.
 
@@ -241,7 +241,7 @@ def main(gpu, args):
     
     for epoch_idx in range(START_EPOCH, END_EPOCH):
 
-        # logger.info(f"Training has started for epoch {epoch_idx}")
+        logger.info(f"Training has started for epoch {epoch_idx}")
         
         MAE_MODEL.train() #set to train mode.
 
@@ -258,7 +258,7 @@ def main(gpu, args):
                     loss, preds, inverted_masks = MAE_MODEL(x=images)
                     
                 
-                dist.reduce(loss, 0, op=dist.ReduceOp.SUM) #reduce loss across all GPU.
+                #dist.reduce(loss, 0, op=dist.ReduceOp.SUM) #reduce loss across all GPU.
 
                 #backward and step
                 if USE_BFLOAT16:
@@ -286,7 +286,7 @@ def main(gpu, args):
             
         except Exception as err:
 
-            # logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
+            logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
 
             if NEPTUNE_RUN and RANK == 0: 
                 NEPTUNE_RUN.stop() 
@@ -295,7 +295,7 @@ def main(gpu, args):
             sys.exit()
 
 
-        # logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
+        logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         
         if USE_NEPTUNE and RANK == 0:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
