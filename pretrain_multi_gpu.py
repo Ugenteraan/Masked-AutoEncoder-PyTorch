@@ -57,7 +57,7 @@ def main(gpu, args):
     
     Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
     #to output to a file
-    logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}",
+    logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}--RANK_{RANK}",
                     level=logging_formatter['level'],
                     format=logging_formatter['format'],
                     backtrace=logging_formatter['backtrace'],
@@ -116,7 +116,7 @@ def main(gpu, args):
 
     #Training configurations
     DEVICE = config['training']['device']
-    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
+    DEVICE = torch.device("cuda:{RANK}" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
     LOAD_CHECKPOINT = config['training']['load_checkpoint']
     LOAD_CHECKPOINT_EPOCH = config['training']['load_checkpoint_epoch']
     END_EPOCH = config['training']['end_epoch']
@@ -138,7 +138,8 @@ def main(gpu, args):
         NEPTUNE_RUN = neptune.init_run(
                                         project=cred.NEPTUNE_PROJECT,
                                         api_token=cred.NEPTUNE_API_TOKEN
-                                      )
+                                      ) if RANK == 0 else None #only init Neptune for rank 0.
+
         #we have partially unsupported types. Hence the utils method.
         NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
 
@@ -161,7 +162,11 @@ def main(gpu, args):
                                   decoder_num_heads=DECODER_NUM_HEADS, 
                                   attn_dropout_prob=ATTN_DROPOUT_PROB,
                                   feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
-                                  logger=logger).to(DEVICE, non_blocking=True)
+                                  logger=logger)
+
+
+    torch.cuda.set_device(gpu)
+    MAE_MODEL.cuda(gpu)
     
     MAE_MODEL =  nn.parallel.DistributedDataParallel(MAE_MODEL, device_ids=[gpu])
     # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
@@ -246,12 +251,14 @@ def main(gpu, args):
         try:
             for idx, data in tqdm(enumerate(DATALOADER)):              
 
-                images = data['images'].to(DEVICE)
+                images = data['images'].to(DEVICE, non_blocking=True)
                 
                 with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
                     loss, preds, inverted_masks = MAE_MODEL(x=images)
                     
-      
+                
+                dist.reduce(loss, 0, op=dist.ReduceOp.SUM) #reduce loss across all GPU.
+
                 #backward and step
                 if USE_BFLOAT16:
                     SCALER.scale(loss).backward()
@@ -264,7 +271,7 @@ def main(gpu, args):
                 OPTIMIZER.zero_grad()
                 _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
 
-                if NEPTUNE_RUN:
+                if NEPTUNE_RUN and RANK == 0:
                     NEPTUNE_RUN['train/lr'].append(_new_lr)
                     NEPTUNE_RUN['train/wd'].append(_new_wd)
                 
@@ -277,7 +284,7 @@ def main(gpu, args):
 
             logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
 
-            if NEPTUNE_RUN: 
+            if NEPTUNE_RUN and RANK == 0: 
                 NEPTUNE_RUN.stop() 
 
             sys.exit()
@@ -285,12 +292,12 @@ def main(gpu, args):
 
         logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         
-        if USE_NEPTUNE:
+        if USE_NEPTUNE and RANK == 0:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
             
         
 
-        if epoch_idx % VISUALIZE_FREQ == 0:
+        if epoch_idx % VISUALIZE_FREQ == 0 and RANK == 0:
 
             #visualize the last iteration.
             VISUALIZER.plot(pred_tensor=preds.detach(), 
@@ -299,7 +306,7 @@ def main(gpu, args):
                             epoch_idx=epoch_idx)
 
         
-        if epoch_idx % MODEL_SAVE_FREQ == 0:
+        if epoch_idx % MODEL_SAVE_FREQ == 0 and RANK == 0:
             
             save_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
                     model_name=MODEL_NAME, 
@@ -311,7 +318,7 @@ def main(gpu, args):
                     logger=logger
                     )
         
-    if USE_NEPTUNE:
+    if USE_NEPTUNE and RANK == 0:
         NEPTUNE_RUN.stop() 
                                      
 
@@ -332,7 +339,7 @@ if __name__ == '__main__':
     parser.add_argument('--nodes', type=int, help='Specify the number of nodes.', default=1)
     args = parser.parse_args()
 
-    mp.spawm(main, nprocs=args.gpus, args=(args,))
+    mp.spawn(main, nprocs=args.gpus, args=(args,), join=True)
 
 
 
