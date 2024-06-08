@@ -291,6 +291,7 @@ def main(gpu, args):
             if NEPTUNE_RUN and RANK == 0: 
                 NEPTUNE_RUN.stop() 
 
+            dist.destroy_process_group()
             sys.exit()
 
 
@@ -321,7 +322,8 @@ def main(gpu, args):
                     N_models_to_keep=N_SAVED_MODEL_TO_KEEP, 
                     logger=logger
                     )
-        
+            
+    dist.destroy_process_group()
     if USE_NEPTUNE and RANK == 0:
         NEPTUNE_RUN.stop() 
                                      

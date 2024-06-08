@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 import deeplake
 import torch
-import cv2
+#import cv2
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
@@ -101,6 +101,9 @@ class LoadUnlabelledDataset(Dataset):
     '''Loads the dataset from the given path.
     '''
 
+    def repeat_tensor(self, x):
+        return x.repeat(int(3 / x.shape[0]), 1, 1)
+
     def __init__(self, dataset_folder_path, image_size=224, image_depth=3, use_random_horizontal_flip=False, logger=None):
         '''Parameter Init.
         '''
@@ -115,10 +118,13 @@ class LoadUnlabelledDataset(Dataset):
         self.image_path = self.read_folder()
         self.logger = logger
 
+
+        
+
         transformation_list = [
                                 transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
-                                transforms.Lambda(lambda x: x.repeat(int(3/x.shape[0]), 1, 1)), #to turn grayscale arrays into compatible RGB arrays.
+                                q #to turn grayscale arrays into compatible RGB arrays.
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                 ]
 
