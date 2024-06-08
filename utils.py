@@ -21,13 +21,17 @@ def load_checkpoint(model_save_folder,
             checkpoint = torch.load(f"{model_save_folder.rstrip('/')}/{model_name}-latest.pth.tar")
 
         epoch = checkpoint['epoch']
-        logger.info(f"Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
+        if not logger is None:
+            logger.info(f"Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
 
 
 
     
     except Exception as err:
-        logger.error(f"Error loading the model! {err}")
+        if not logger is None:
+            logger.error(f"Error loading the model! {err}")
+        else:
+            print(err)
         epoch = 0
 
     return mae_model, epoch
@@ -57,13 +61,18 @@ def save_checkpoint(model_save_folder,
         Path(f"{model_save_folder}").mkdir(parents=True, exist_ok=True) #create directory if doesn't exist.yy
         torch.save(save_dict, f"{model_save_folder.rstrip('/')}/{model_name}-checkpoint-ep-{epoch}.pth.tar") 
         torch.save(save_dict, f"{model_save_folder.rstrip('/')}/{model_name}-latest.pth.tar") 
-        logger.info(f"Model checkpoint save for epoch {epoch} is successful!")
+
+        if not logger is None:
+            logger.info(f"Model checkpoint save for epoch {epoch} is successful!")
 
         #remove the unwanted models.
         remove_old_models(N_models_to_keep=N_models_to_keep, model_save_folder=model_save_folder)
 
     except Exception as err:
-        logger.error(f"Model checkpoint save for epoch {epoch} has failed! {err}")
+        if not logger is None:
+            logger.error(f"Model checkpoint save for epoch {epoch} has failed! {err}")
+        else:
+            print(err)
 
     return None
 

@@ -42,36 +42,36 @@ def main(gpu, args):
         print("Configuration read successful...")
 
     
-    with open(args.logging_config, 'r') as logging_configfile:
-        logging_config = yaml.load(logging_configfile, Loader=yaml.FullLoader)
-        print("Logging configuration file read successful...")
-        print("Initializing logger") 
+    # with open(args.logging_config, 'r') as logging_configfile:
+    #     logging_config = yaml.load(logging_configfile, Loader=yaml.FullLoader)
+    #     print("Logging configuration file read successful...")
+    #     print("Initializing logger") 
     
     
     ###Logger initialization
-    if logging_config['disable_default_loggers']:
-        logger.remove(0)
+    # if logging_config['disable_default_loggers']:
+    #     logger.remove(0)
 
-    logging_formatter = logging_config['formatters'][config['env']] #set the environment for the logger.
+    # logging_formatter = logging_config['formatters'][config['env']] #set the environment for the logger.
 
     
-    Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
-    #to output to a file
-    logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}--RANK_{RANK}",
-                    level=logging_formatter['level'],
-                    format=logging_formatter['format'],
-                    backtrace=logging_formatter['backtrace'],
-                    diagnose=logging_formatter['diagnose'],
-                    enqueue=logging_formatter['enqueue'])
+    # Path(f"{logging_config['log_dir']}").mkdir(parents=True, exist_ok=True)
+    # #to output to a file
+    # logger.add(f"{logging_config['log_dir']}{DATETIME_NOW}-{logging_config['log_filename']}--RANK_{RANK}",
+    #                 level=logging_formatter['level'],
+    #                 format=logging_formatter['format'],
+    #                 backtrace=logging_formatter['backtrace'],
+    #                 diagnose=logging_formatter['diagnose'],
+    #                 enqueue=logging_formatter['enqueue'])
 
-    #to output to the console.
-    logger.add(sys.stdout,
-                level=logging_formatter['level'],
-                format=logging_formatter['format'],
-                backtrace=logging_formatter['backtrace'],
-                colorize=True,
-                diagnose=logging_formatter['diagnose'],
-                enqueue=logging_formatter['enqueue'])
+    # #to output to the console.
+    # logger.add(sys.stdout,
+    #             level=logging_formatter['level'],
+    #             format=logging_formatter['format'],
+    #             backtrace=logging_formatter['backtrace'],
+    #             colorize=True,
+    #             diagnose=logging_formatter['diagnose'],
+    #             enqueue=logging_formatter['enqueue'])
    
 
     #@@@@@@@@@@@@@@@@@@@@@@@@@ Extract the configurations from YAML file @@@@@@@@@@@@@@@@@@@@@@
@@ -116,7 +116,7 @@ def main(gpu, args):
 
     #Training configurations
     DEVICE = config['training']['device']
-    DEVICE = torch.device("cuda:{RANK}" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
+    DEVICE = torch.device(f"cuda:{RANK}" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
     LOAD_CHECKPOINT = config['training']['load_checkpoint']
     LOAD_CHECKPOINT_EPOCH = config['training']['load_checkpoint_epoch']
     END_EPOCH = config['training']['end_epoch']
@@ -140,11 +140,12 @@ def main(gpu, args):
                                         api_token=cred.NEPTUNE_API_TOKEN
                                       ) if RANK == 0 else None #only init Neptune for rank 0.
 
-        #we have partially unsupported types. Hence the utils method.
-        NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
+        if RANK == 0:
+            #we have partially unsupported types. Hence the utils method.
+            NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
 
 
-    logger.info("Init MAE model...")
+    # logger.info("Init MAE model...")
     
     MAE_MODEL = MaskedAutoEncoder(patch_size=PATCH_SIZE, 
                                   image_size=IMAGE_SIZE, 
@@ -162,7 +163,7 @@ def main(gpu, args):
                                   decoder_num_heads=DECODER_NUM_HEADS, 
                                   attn_dropout_prob=ATTN_DROPOUT_PROB,
                                   feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
-                                  logger=logger)
+                                  logger=None)
 
 
     torch.cuda.set_device(gpu)
@@ -184,16 +185,16 @@ def main(gpu, args):
                                        image_size=224, 
                                        image_depth=3, 
                                        use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP, 
-                                       logger=logger)
+                                       logger=None)
 
 
-    DATASET_MODULE = torch.utils.data.distributed.DistributedSampler(DATASET_MODULE, num_replicas=WORLD_SIZE, rank=RANK)
+    SAMPLER = torch.utils.data.distributed.DistributedSampler(DATASET_MODULE, num_replicas=WORLD_SIZE, rank=RANK)
 
     DATALOADER = DataLoader(DATASET_MODULE, 
                             batch_size=BATCH_SIZE, 
-                            shuffle=SHUFFLE, 
                             pin_memory=True,
-                            num_workers=NUM_WORKERS)
+                            num_workers=NUM_WORKERS,
+                            sampler=SAMPLER)
 
     ITERATIONS_PER_EPOCH = len(DATALOADER) 
     #this module contains the init for optimizer and schedulers.
@@ -206,7 +207,7 @@ def main(gpu, args):
                                              num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
                                              cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
                                              cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
-                                             logger=logger
+                                             logger=None
                                             )
 
     OPTIMIZER = OPTIM_AND_SCHEDULERS.get_optimizer()
@@ -223,7 +224,7 @@ def main(gpu, args):
                                                                     model_name=MODEL_NAME, 
                                                                     mae_model=MAE_MODEL,
                                                                     load_checkpoint_epoch=None, 
-                                                                    logger=logger)
+                                                                    logger=None)
         for _ in range(ITERATIONS_PER_EPOCH*START_EPOCH):
             OPTIM_AND_SCHEDULERS.step() #this is needed to restore the parameters of the optimizer. LR and WD rate.
 
@@ -240,7 +241,7 @@ def main(gpu, args):
     
     for epoch_idx in range(START_EPOCH, END_EPOCH):
 
-        logger.info(f"Training has started for epoch {epoch_idx}")
+        # logger.info(f"Training has started for epoch {epoch_idx}")
         
         MAE_MODEL.train() #set to train mode.
 
@@ -271,18 +272,21 @@ def main(gpu, args):
                 OPTIMIZER.zero_grad()
                 _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
 
+                
                 if NEPTUNE_RUN and RANK == 0:
+
+                    
                     NEPTUNE_RUN['train/lr'].append(_new_lr)
                     NEPTUNE_RUN['train/wd'].append(_new_wd)
                 
-                epoch_loss += loss.item()
+                epoch_loss += loss.item() / WORLD_SIZE #average loss
 
                 # torch.nn.utils.clip_grad_norm_(MAE_MODEL.parameters(), 1.0)
 
             
         except Exception as err:
 
-            logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
+            # logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
 
             if NEPTUNE_RUN and RANK == 0: 
                 NEPTUNE_RUN.stop() 
@@ -290,7 +294,7 @@ def main(gpu, args):
             sys.exit()
 
 
-        logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
+        # logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
         
         if USE_NEPTUNE and RANK == 0:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
@@ -328,7 +332,7 @@ if __name__ == '__main__':
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
 
-    os.environ['MASTER_ADDR'] = '10.106.15.226'
+    os.environ['MASTER_ADDR'] = '192.168.122.88'
     os.environ['MASTER_PORT'] = '8888'
 
     parser = argparse.ArgumentParser()
