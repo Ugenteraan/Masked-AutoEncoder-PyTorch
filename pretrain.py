@@ -264,7 +264,7 @@ def main(args):
 
             logger.error(f"Training stopped at epoch {epoch_idx} due to {err}")
 
-            if NEPTUNE_RUN: 
+            if USE_NEPTUNE: 
                 NEPTUNE_RUN.stop() 
 
             sys.exit()
