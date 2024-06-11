@@ -251,7 +251,7 @@ def main(args):
                 OPTIMIZER.zero_grad()
                 _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
 
-                if NEPTUNE_RUN:
+                if USE_NEPTUNE:
                     NEPTUNE_RUN['train/lr'].append(_new_lr)
                     NEPTUNE_RUN['train/wd'].append(_new_wd)
                 
