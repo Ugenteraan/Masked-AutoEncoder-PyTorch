@@ -124,7 +124,7 @@ class LoadUnlabelledDataset(Dataset):
         transformation_list = [
                                 transforms.Resize((self.image_size, self.image_size)),
                                 transforms.ToTensor(),
-                                q #to turn grayscale arrays into compatible RGB arrays.
+                                transforms.Lambda(self.repeat_tensor), #to turn grayscale arrays into compatible RGB arrays.
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                 ]
 
