@@ -91,12 +91,12 @@ class MaskedAutoEncoder(nn.Module):
         self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)).to(device) #+1 for the cls token at dim 1.
 
         self.decoder_transformer_blocks = TransformerNetwork(device=device,
-                                                                    input_dim=decoder_embedding_dim,
-                                                                    transformer_network_depth=decoder_transformer_blocks_depth,
-                                                                    num_heads=decoder_num_heads,
-                                                                    mlp_ratio=encoder_mlp_ratio,
-                                                                    attn_dropout_prob=attn_dropout_prob,
-                                                                    feedforward_dropout_prob=feedforward_dropout_prob).to(device)
+                                                             input_dim=decoder_embedding_dim,
+                                                             transformer_network_depth=decoder_transformer_blocks_depth,
+                                                             num_heads=decoder_num_heads,
+                                                             mlp_ratio=encoder_mlp_ratio,
+                                                             attn_dropout_prob=attn_dropout_prob,
+                                                             feedforward_dropout_prob=feedforward_dropout_prob).to(device)
         
         self.decoder_norm = nn.LayerNorm(decoder_embedding_dim).to(device)
 
@@ -140,6 +140,7 @@ class MaskedAutoEncoder(nn.Module):
         x = self.patch_embed(x) #patch embedding as in traditional ViT.
         
         x = x + self.encoder_pos_embed[:, 1:, :] #the cls token is not yet appended to the patch embedding. We will add the cls token after masking. Hence the pos embed is excluded of the cls token index as well.
+        
 
         x, mask, idxs_reverse_shuffle  = self.random_masking(x) #perform random masking per batch.
 

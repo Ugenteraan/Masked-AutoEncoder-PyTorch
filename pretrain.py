@@ -13,7 +13,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from pathlib import Path
-# from torch.profiler import profile, record_function, ProfilerActivity
+from torch.utils.tensorboard import SummaryWriter
+from torch.profiler import profile, record_function, ProfilerActivity
+
 
 from models.mae import MaskedAutoEncoder
 from load_dataset import LoadDeepLakeDataset, LoadUnlabelledDataset
@@ -120,7 +122,9 @@ def main(args):
     COSINE_UPPER_BOUND_WD = config['training']['cosine_upper_bound_wd']
     COSINE_LOWER_BOUND_WD = config['training']['cosine_lower_bound_wd']
     USE_BFLOAT16 = config['training']['use_bfloat16']
-    USE_NEPTUNE = config['training']['use_neptune']    
+    USE_NEPTUNE = config['training']['use_neptune']
+    USE_TENSORBOARD = config['training']['use_tensorboard']
+    USE_PROFILER = config['training']['use_profiler']
     
     
     if USE_NEPTUNE:
@@ -133,6 +137,9 @@ def main(args):
         #we have partially unsupported types. Hence the utils method.
         NEPTUNE_RUN['parameters'] = neptune.utils.stringify_unsupported(config)
 
+
+    if USE_TENSORBOARD:
+        TB_WRITER = writer = SummaryWriter(f'runs/mae-{DATETIME_NOW}')
 
     logger.info("Init MAE model...")
     
@@ -154,7 +161,29 @@ def main(args):
                                   feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
                                   logger=logger).to(DEVICE, non_blocking=True)
     
+
+    if USE_PROFILER:
+        sample_inp = torch.randn(2, IMAGE_DEPTH, IMAGE_SIZE, IMAGE_SIZE, requires_grad=False)
+
+        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+            with record_function("Model inference"):
+                MAE_MODEL(sample_inp)
+
+        print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=50))
+
+        #to check what device each parameter is on. Seems like everything is on Cuda when initialized so.
+        # for name, param in MAE_MODEL.named_parameters():
+        #     print(f"Parameter: {name}, Device: {param.device}")
+
+
     
+    # if USE_TENSORBOARD:
+    #     sample_inp = torch.zeros(2, IMAGE_DEPTH, IMAGE_SIZE, IMAGE_SIZE, requires_grad=False).to(DEVICE)
+        
+    #     with torch.no_grad():
+    #         TB_WRITER.add_graph(MAE_MODEL, sample_inp)
+
+
     # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
     #                                           deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
     #                                           image_size=IMAGE_SIZE,
@@ -229,12 +258,19 @@ def main(args):
         epoch_loss = 0
         
 
-        
         try:
-            for idx, data in tqdm(enumerate(DATALOADER)):              
+            for idx, data in tqdm(enumerate(DATALOADER)):   
+         
 
                 images = data['images'].to(DEVICE)
-                
+
+                # if epoch_idx == 0 and idx == 0:
+
+                #     for param in MAE_MODEL.parameters():
+                #         param.requires_grad = False
+                #     MAE_MODEL.eval()
+                #     TB_WRITER.add_graph(MAE_MODEL, images.detach())
+
                 with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
                     loss, preds, inverted_masks = MAE_MODEL(x=images)
                     
@@ -267,10 +303,16 @@ def main(args):
             if USE_NEPTUNE: 
                 NEPTUNE_RUN.stop() 
 
+            if USE_TENSORBOARD:
+                TB_WRITER.close()
+
             sys.exit()
 
 
         logger.info(f"The training loss at epoch {epoch_idx} is : {epoch_loss}")
+
+        if USE_TENSORBOARD:
+            TB_WRITER.add_scalar("Loss/train", epoch_loss, epoch_idx)
         
         if USE_NEPTUNE:
             NEPTUNE_RUN['train/loss_per_epoch'].append(epoch_loss)
@@ -300,13 +342,16 @@ def main(args):
         
     if USE_NEPTUNE:
         NEPTUNE_RUN.stop() 
+
+    if USE_TENSORBOARD:
+        TB_WRITER.close()
                                      
                                   
 
 if __name__ == '__main__':
 
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
+    # os.environ["OMP_NUM_THREADS"] = "1"
+    # os.environ["MKL_NUM_THREADS"] = "1"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', required=True, type=str, help='Specify the YAML config file to be used.')
