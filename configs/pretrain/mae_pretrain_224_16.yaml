@@ -1,11 +1,11 @@
 
 env: development
 data:
-  batch_size: 140
+  batch_size: 512
   image_size: 224
   image_depth: 3
   dataset_folder: ./dataset/dog_breed_classification/ssl_train/
-  num_workers: 8
+  num_workers: 10
   shuffle: true
   use_random_horizontal_flip: true
   normalize_pixel: true
@@ -26,16 +26,16 @@ model:
   model_save_freq: 2 #save every N epoch.
   N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
   model_name: mae-pretrain
-  encoder_transformer_blocks_depth: 8
-  decoder_transformer_blocks_depth: 5
-  encoder_embedding_dim: 512
-  decoder_embedding_dim: 256
+  encoder_transformer_blocks_depth: 5
+  decoder_transformer_blocks_depth: 3
+  encoder_embedding_dim: 512  
+  decoder_embedding_dim: 384
   encoder_mlp_ratio: 4
   decoder_mlp_ratio: 4
   encoder_num_heads: 8
   decoder_num_heads: 8
-  attn_dropout_prob: 0.05
-  feedforward_dropout_prob: 0.05
+  attn_dropout_prob: .0
+  feedforward_dropout_prob: .0
 
 training:
   device: gpu

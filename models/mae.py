@@ -7,10 +7,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
 import torch.nn as nn
+import einops
 from .patch_embed import PatchEmbed
 from .transformer_encoder import TransformerNetwork 
 from .random_masking import RandomMasking
-
+from .positional_encoder import PositionalEncoder
 
 
 class MaskedAutoEncoder(nn.Module):
@@ -67,9 +68,14 @@ class MaskedAutoEncoder(nn.Module):
         
         #we initialize with zeros because we will be populating them later with normal distribution or any other dist.
         self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim)).to(device) 
-        #we will be using learnable parameters as positional embedding vector. The +1 is for the CLS token.
-        self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)).to(device)
+
+        # #we will be using learnable parameters as positional embedding vector. The +1 is for the CLS token.
+        # self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)).to(device)
         
+        self.encoder_pos_embed = PositionalEncoder(token_length=self.num_patches+1, 
+                                                            output_dim=encoder_embedding_dim, 
+                                                            n=10000, 
+                                                            device=self.device)
 
         self.encoder_transformer_blocks = TransformerNetwork(device=device,
                                                             input_dim=encoder_embedding_dim,
@@ -88,7 +94,12 @@ class MaskedAutoEncoder(nn.Module):
         self.decoder_embed = nn.Linear(encoder_embedding_dim, decoder_embedding_dim, bias=True).to(device)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim)).to(device)
-        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)).to(device) #+1 for the cls token at dim 1.
+        # self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)).to(device) #+1 for the cls token at dim 1.
+        self.decoder_pos_embed = PositionalEncoder(token_length=self.num_patches+1, 
+                                                    output_dim=decoder_embedding_dim, 
+                                                    n=10000, 
+                                                    device=self.device)
+
 
         self.decoder_transformer_blocks = TransformerNetwork(device=device,
                                                              input_dim=decoder_embedding_dim,
@@ -139,13 +150,16 @@ class MaskedAutoEncoder(nn.Module):
 
         x = self.patch_embed(x) #patch embedding as in traditional ViT.
         
-        x = x + self.encoder_pos_embed[:, 1:, :] #the cls token is not yet appended to the patch embedding. We will add the cls token after masking. Hence the pos embed is excluded of the cls token index as well.
+        encoder_pos_embed_tensor = self.encoder_pos_embed()
+        encoder_pos_embed_tensor = einops.repeat(encoder_pos_embed_tensor.unsqueeze(0), '() p e -> b p e', b=x.size(0))
+
+        x = x + encoder_pos_embed_tensor[:, 1:, :] #the cls token is not yet appended to the patch embedding. We will add the cls token after masking. Hence the pos embed is excluded of the cls token index as well.
         
 
         x, mask, idxs_reverse_shuffle  = self.random_masking(x) #perform random masking per batch.
 
         #append cls token
-        cls_token = self.cls_token + self.encoder_pos_embed[:, :1, :] #add the positional embedding for cls token only.
+        cls_token = self.cls_token + encoder_pos_embed_tensor[:, :1, :] #add the positional embedding for cls token only.
         cls_token = cls_token.expand(x.shape[0], -1, -1) #-1 means not changing the size of that dimension.
         x = torch.cat((cls_token, x), dim=1)
 
@@ -173,7 +187,11 @@ class MaskedAutoEncoder(nn.Module):
         x_ = torch.gather(x_, dim=1, index=idxs_reverse_shuffle.unsqueeze(-1).repeat(1, 1, x.shape[2])) #this will unshuffle the tensor to the original position. In other words, the masked patches will now have mask tokens in their place while the unmasked patches will have the output from the encoder.
         x = torch.cat([x[:, :1, :], x_], dim=1) #append back the CLS token from the original x.
 
-        x = x + self.decoder_pos_embed 
+
+        decoder_pos_embed_tensor = self.decoder_pos_embed()
+        decoder_pos_embed_tensor = einops.repeat(decoder_pos_embed_tensor.unsqueeze(0), '() p e -> b p e', b=x.size(0))
+
+        x = x + decoder_pos_embed_tensor
 
         x = self.decoder_transformer_blocks(x)
 
