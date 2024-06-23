@@ -159,7 +159,8 @@ def main(args):
                                   decoder_num_heads=DECODER_NUM_HEADS, 
                                   attn_dropout_prob=ATTN_DROPOUT_PROB,
                                   feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
-                                  logger=logger).to(DEVICE, non_blocking=True)
+                                  logger=logger,
+                                  using_tensorboard=False).to(DEVICE, non_blocking=True)
     
 
     if USE_PROFILER:
@@ -177,34 +178,49 @@ def main(args):
 
 
     
-    # if USE_TENSORBOARD:
-    #     sample_inp = torch.zeros(2, IMAGE_DEPTH, IMAGE_SIZE, IMAGE_SIZE, requires_grad=False).to(DEVICE)
+    if USE_TENSORBOARD:
+        sample_inp = torch.zeros(2, IMAGE_DEPTH, IMAGE_SIZE, IMAGE_SIZE, requires_grad=False).to(DEVICE)
+
+        #initialize for tensorboard
+        MAE_MODEL = MaskedAutoEncoder(patch_size=PATCH_SIZE, 
+                                      image_size=IMAGE_SIZE, 
+                                      image_depth=IMAGE_DEPTH,
+                                      encoder_embedding_dim=ENCODER_EMBEDDING_DIM, 
+                                      decoder_embedding_dim=DECODER_EMBEDDING_DIM, 
+                                      encoder_transformer_blocks_depth=ENCODER_TRANSFORMER_BLOCKS_DEPTH, 
+                                      decoder_transformer_blocks_depth=DECODER_TRANSFORMER_BLOCKS_DEPTH, 
+                                      masking_ratio=MASKING_RATIO,
+                                      normalize_pixel=NORMALIZE_PIXEL,
+                                      device=DEVICE,
+                                      encoder_mlp_ratio=ENCODER_MLP_RATIO, 
+                                      decoder_mlp_ratio=DECODER_MLP_RATIO,
+                                      encoder_num_heads=ENCODER_NUM_HEADS,
+                                      decoder_num_heads=DECODER_NUM_HEADS, 
+                                      attn_dropout_prob=ATTN_DROPOUT_PROB,
+                                      feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
+                                      logger=logger,
+                                      using_tensorboard=True).to(DEVICE, non_blocking=True)
+
+
         
-    #     with torch.no_grad():
-    #         TB_WRITER.add_graph(MAE_MODEL, sample_inp)
+        with torch.no_grad():
+            TB_WRITER.add_graph(MAE_MODEL, sample_inp)
 
 
-    # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
-    #                                           deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
-    #                                           image_size=IMAGE_SIZE,
-    #                                           batch_size=BATCH_SIZE, 
-    #                                           num_workers=NUM_WORKERS,
-    #                                           shuffle=SHUFFLE,
-    #                                           use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
-    #                                           mode='train',
-    #                                           logger=logger)()
+
 
 
     DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, 
-                                       image_size=224, 
-                                       image_depth=3, 
-                                       use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP, 
-                                       logger=logger)
+                                           image_size=IMAGE_SIZE, 
+                                           image_depth=IMAGE_DEPTH, 
+                                           use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP, 
+                                           logger=logger)
 
     DATALOADER = DataLoader(DATASET_MODULE, 
                             batch_size=BATCH_SIZE, 
                             shuffle=SHUFFLE, 
                             num_workers=NUM_WORKERS)
+
 
     ITERATIONS_PER_EPOCH = len(DATALOADER) 
     #this module contains the init for optimizer and schedulers.
@@ -235,6 +251,7 @@ def main(args):
                                                                     mae_model=MAE_MODEL,
                                                                     load_checkpoint_epoch=None, 
                                                                     logger=logger)
+
         for _ in range(ITERATIONS_PER_EPOCH*START_EPOCH):
             OPTIM_AND_SCHEDULERS.step() #this is needed to restore the parameters of the optimizer. LR and WD rate.
 
@@ -264,13 +281,6 @@ def main(args):
 
                 images = data['images'].to(DEVICE)
 
-                # if epoch_idx == 0 and idx == 0:
-
-                #     for param in MAE_MODEL.parameters():
-                #         param.requires_grad = False
-                #     MAE_MODEL.eval()
-                #     TB_WRITER.add_graph(MAE_MODEL, images.detach())
-
                 with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
                     loss, preds, inverted_masks = MAE_MODEL(x=images)
                     
@@ -290,6 +300,10 @@ def main(args):
                 if USE_NEPTUNE:
                     NEPTUNE_RUN['train/lr'].append(_new_lr)
                     NEPTUNE_RUN['train/wd'].append(_new_wd)
+
+                if USE_TENSORBOARD:
+                    TB_WRITER.add_scalar("train/lr", _new_lr, (epoch_idx+1)*(idx+1))
+                    TB_WRITER.add_scalar("train/wd", _new_wd, (epoch_idx+1)*(idx+1))
                 
                 epoch_loss += loss.item()
 

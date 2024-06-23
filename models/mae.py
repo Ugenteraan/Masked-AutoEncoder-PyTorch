@@ -44,6 +44,7 @@ class MaskedAutoEncoder(nn.Module):
                  attn_dropout_prob,
                  feedforward_dropout_prob,
                  logger=None,
+                 using_tensorboard=False, #we need this parameter to disable gradients in some tensors due to tensorboard not being able to convert them into constants.
                  init_std=0.02):
 
         '''Init variables.
@@ -67,15 +68,15 @@ class MaskedAutoEncoder(nn.Module):
 
         
         #we initialize with zeros because we will be populating them later with normal distribution or any other dist.
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim)).to(device) 
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, encoder_embedding_dim), requires_grad=not using_tensorboard).to(device) 
 
         # #we will be using learnable parameters as positional embedding vector. The +1 is for the CLS token.
         # self.encoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, encoder_embedding_dim)).to(device)
         
         self.encoder_pos_embed = PositionalEncoder(token_length=self.num_patches+1, 
-                                                            output_dim=encoder_embedding_dim, 
-                                                            n=10000, 
-                                                            device=self.device)
+                                                   output_dim=encoder_embedding_dim, 
+                                                   n=10000, 
+                                                   device=device)
 
         self.encoder_transformer_blocks = TransformerNetwork(device=device,
                                                             input_dim=encoder_embedding_dim,
@@ -93,12 +94,12 @@ class MaskedAutoEncoder(nn.Module):
         # MAE decoder specifics
         self.decoder_embed = nn.Linear(encoder_embedding_dim, decoder_embedding_dim, bias=True).to(device)
 
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim)).to(device)
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embedding_dim), requires_grad=not using_tensorboard).to(device)
         # self.decoder_pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, decoder_embedding_dim)).to(device) #+1 for the cls token at dim 1.
         self.decoder_pos_embed = PositionalEncoder(token_length=self.num_patches+1, 
-                                                    output_dim=decoder_embedding_dim, 
-                                                    n=10000, 
-                                                    device=self.device)
+                                                   output_dim=decoder_embedding_dim, 
+                                                   n=10000, 
+                                                   device=device)
 
 
         self.decoder_transformer_blocks = TransformerNetwork(device=device,
@@ -115,7 +116,7 @@ class MaskedAutoEncoder(nn.Module):
 
         self.mse_loss = nn.MSELoss(reduction='mean').to(device)
         
-        self.apply(self.initialize_weights)
+        # self.apply(self.initialize_weights)
 
 
     def initialize_weights(self, m):
