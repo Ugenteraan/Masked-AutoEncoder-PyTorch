@@ -82,7 +82,8 @@ class VisualizePrediction:
              pred_tensor,
              target_tensor,
              inverted_masks,
-             epoch_idx):
+             epoch_idx, 
+             neptune_run=None):
 
         '''Plots both the target and the prediction from the decoder side by side.
         '''
@@ -116,4 +117,14 @@ class VisualizePrediction:
         
         Path(f"{self.fig_savepath}").mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{self.fig_savepath}/visualization - {epoch_idx}.jpg')
+
+        if not neptune_run is None:
+            neptune_run['train/reconstructions'].append(fig)
+
         plt.close()
+
+
+        
+
+
+

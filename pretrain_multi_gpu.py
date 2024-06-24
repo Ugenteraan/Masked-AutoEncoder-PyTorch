@@ -170,16 +170,7 @@ def main(gpu, args):
     MAE_MODEL.cuda(gpu)
     
     MAE_MODEL =  nn.parallel.DistributedDataParallel(MAE_MODEL, device_ids=[gpu])
-    # DEEPLAKE_DATALOADER = LoadDeepLakeDataset(token=cred.ACTIVELOOP_TOKEN,
-    #                                           deeplake_ds_name=f"hub://activeloop/{DEEPLAKE_DS_NAME}-train",
-    #                                           image_size=IMAGE_SIZE,
-    #                                           batch_size=BATCH_SIZE, 
-    #                                           num_workers=NUM_WORKERS,
-    #                                           shuffle=SHUFFLE,
-    #                                           use_random_horizontal_flip=USE_RANDOM_HORIZONTAL_FLIP,
-    #                                           mode='train',
-    #                                           logger=logger)()
-
+   
 
     DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, 
                                        image_size=224, 
