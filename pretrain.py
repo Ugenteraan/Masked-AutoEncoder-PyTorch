@@ -127,6 +127,7 @@ def main(args):
     USE_PROFILER = config['training']['use_profiler']
     
     
+    NEPTUNE_RUN=None
     if USE_NEPTUNE:
         import neptune
 
@@ -339,7 +340,8 @@ def main(args):
             VISUALIZER.plot(pred_tensor=preds.detach(), 
                             target_tensor=images.detach(), 
                             inverted_masks=inverted_masks.detach(),
-                            epoch_idx=epoch_idx)
+                            epoch_idx=epoch_idx,
+                            neptune_run=NEPTUNE_RUN)
 
         
         if epoch_idx % MODEL_SAVE_FREQ == 0:
