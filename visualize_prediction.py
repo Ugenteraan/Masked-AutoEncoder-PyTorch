@@ -85,7 +85,8 @@ class VisualizePrediction:
              target_tensor,
              inverted_masks,
              epoch_idx, 
-             neptune_run=None):
+             neptune_run=None,
+             tb_writer=None):
 
         '''Plots both the target and the prediction from the decoder side by side.
         '''
@@ -124,7 +125,7 @@ class VisualizePrediction:
             neptune_run['train/reconstructions'].append(fig)
 
         if not tb_writer is None:
-            tb_writer.summary.image("reconstruction images", fig, step=epoch_idx)
+            tb_writer.add_figure("reconstruction images", fig, global_step=epoch_idx)
 
 
         plt.close()

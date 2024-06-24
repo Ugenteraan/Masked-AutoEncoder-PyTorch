@@ -301,7 +301,8 @@ def main(gpu, args):
                             target_tensor=images.detach(), 
                             inverted_masks=inverted_masks.detach(),
                             epoch_idx=epoch_idx,
-                            neptune_run=NEPTUNE_RUN)
+                            neptune_run=NEPTUNE_RUN
+                            )
 
         
         if epoch_idx % MODEL_SAVE_FREQ == 0 and RANK == 0:

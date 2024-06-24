@@ -341,7 +341,8 @@ def main(args):
                             target_tensor=images.detach(), 
                             inverted_masks=inverted_masks.detach(),
                             epoch_idx=epoch_idx,
-                            neptune_run=NEPTUNE_RUN)
+                            neptune_run=NEPTUNE_RUN,
+                            tb_writer=TB_WRITER)
 
         
         if epoch_idx % MODEL_SAVE_FREQ == 0:

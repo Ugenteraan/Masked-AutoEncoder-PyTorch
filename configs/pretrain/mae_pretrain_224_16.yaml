@@ -26,10 +26,10 @@ model:
   model_save_freq: 2 #save every N epoch.
   N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
   model_name: mae-pretrain
-  encoder_transformer_blocks_depth: 14
-  decoder_transformer_blocks_depth: 10
-  encoder_embedding_dim: 1024   
-  decoder_embedding_dim: 512
+  encoder_transformer_blocks_depth: 12
+  decoder_transformer_blocks_depth: 8
+  encoder_embedding_dim: 512   
+  decoder_embedding_dim: 384
   encoder_mlp_ratio: 4
   decoder_mlp_ratio: 4
   encoder_num_heads: 8
