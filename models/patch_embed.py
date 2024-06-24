@@ -90,19 +90,19 @@ class PatchEmbed(nn.Module):
 
     
     
-used this to verify the correctness of the patching and un-patching operation implemented.
-if __name__ == '__main__':
+# used this to verify the correctness of the patching and un-patching operation implemented.
+# if __name__ == '__main__':
     
-    x = torch.randn((2, 3, 224, 224))
+#     x = torch.randn((2, 3, 224, 224))
     
-    p = PatchEmbed(patch_size=16, image_size=224, image_depth=3, embedding_dim=768, device=torch.device('cpu'))
+#     p = PatchEmbed(patch_size=16, image_size=224, image_depth=3, embedding_dim=768, device=torch.device('cpu'))
     
-    x_ = p.get_non_overlapping_patches(imgs=x)
-    print(x_.size())
-    y = p.make_patches_into_images(x_)
-    print(y.size())
+#     x_ = p.get_non_overlapping_patches(imgs=x)
+#     print(x_.size())
+#     y = p.make_patches_into_images(x_)
+#     print(y.size())
     
-    print(torch.equal(x, y))
+#     print(torch.equal(x, y))
 
 
 

@@ -18,7 +18,9 @@ class VisualizePrediction:
                  image_depth=3,
                  patch_size=16,
                  fig_savepath='./figures/',
-                 num_figs=5):
+                 num_figs=5,
+                 neptune_run=None,
+                 tb_writer=None):
 
 
         self.image_size = image_size 
@@ -120,6 +122,10 @@ class VisualizePrediction:
 
         if not neptune_run is None:
             neptune_run['train/reconstructions'].append(fig)
+
+        if not tb_writer is None:
+            tb_writer.summary.image("reconstruction images", fig, step=epoch_idx)
+
 
         plt.close()
 

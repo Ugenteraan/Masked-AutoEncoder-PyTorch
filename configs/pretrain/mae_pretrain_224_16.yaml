@@ -5,15 +5,15 @@ data:
   image_size: 224
   image_depth: 3
   dataset_folder: ./dataset/dog_breed_classification/ssl_train/
-  num_workers: 10
+  num_workers: 8
   shuffle: true
   use_random_horizontal_flip: true
   normalize_pixel: true
   deeplake_ds_name: 'imagenet'
 
 mask:
-  patch_size: 14
-  masking_ratio: 0.7
+  patch_size: 16
+  masking_ratio: 0.75
 
 visualization:
   visualize_batch_size: 5
@@ -26,16 +26,16 @@ model:
   model_save_freq: 2 #save every N epoch.
   N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
   model_name: mae-pretrain
-  encoder_transformer_blocks_depth: 10
-  decoder_transformer_blocks_depth: 6
-  encoder_embedding_dim: 512  
-  decoder_embedding_dim: 384
+  encoder_transformer_blocks_depth: 14
+  decoder_transformer_blocks_depth: 10
+  encoder_embedding_dim: 1024   
+  decoder_embedding_dim: 512
   encoder_mlp_ratio: 4
   decoder_mlp_ratio: 4
   encoder_num_heads: 8
   decoder_num_heads: 8
   attn_dropout_prob: .05
-  feedforward_dropout_prob: .05
+  feedforward_dropout_prob: .1
 
 training:
   device: gpu
@@ -45,7 +45,7 @@ training:
   end_epoch : 10000
   cosine_upper_bound_lr : 1.0e-4
   cosine_lower_bound_lr : 1.0e-6
-  cosine_upper_bound_wd : 1.0e-3
+  cosine_upper_bound_wd : 1.0e-2
   cosine_lower_bound_wd : 1.0e-4
   num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
   warmup_start_lr : 5.0e-7 #learning rate starts here.
