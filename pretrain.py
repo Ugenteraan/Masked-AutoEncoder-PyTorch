@@ -114,13 +114,16 @@ def main(args):
     LOAD_CHECKPOINT_EPOCH = config['training']['load_checkpoint_epoch']
     END_EPOCH = config['training']['end_epoch']
     START_EPOCH = config['training']['start_epoch']
-    COSINE_UPPER_BOUND_LR = config['training']['cosine_upper_bound_lr']
-    COSINE_LOWER_BOUND_LR = config['training']['cosine_lower_bound_lr']
-    WARMUP_START_LR = config['training']['warmup_start_lr']
-    WARMUP_STEPS = config['training']['warmup_steps']
-    NUM_EPOCH_TO_RESTART_LR = config['training']['num_epoch_to_restart_lr']
-    COSINE_UPPER_BOUND_WD = config['training']['cosine_upper_bound_wd']
-    COSINE_LOWER_BOUND_WD = config['training']['cosine_lower_bound_wd']
+    COSINE_UPPER_BOUND_LR = config['training']['cosine_annealing']['cosine_upper_bound_lr']
+    COSINE_LOWER_BOUND_LR = config['training']['cosine_annealing']['cosine_lower_bound_lr']
+    WARMUP_START_LR = config['training']['cosine_annealing']['warmup_start_lr']
+    WARMUP_STEPS = config['training']['cosine_annealing']['warmup_steps']
+    INITIAL_NUM_EPOCH_TO_RESTART_LR = config['training']['cosine_annealing']['initial_num_epoch_to_restart_lr']
+    FINAL_NUM_EPOCH_TO_RESTART_LR = config['training']['cosine_annealing']['final_num_epoch_to_restart_lr']
+    EPOCH_IDX_TO_INCREASE_RESTARTS = config['training']['cosine_annealing']['epoch_idx_to_increase_restarts']
+    COSINE_UPPER_BOUND_WD = config['training']['cosine_annealing']['cosine_upper_bound_wd']
+    COSINE_LOWER_BOUND_WD = config['training']['cosine_annealing']['cosine_lower_bound_wd']
+    UPPER_BOUND_LR_DECAY = config['training']['cosine_annealing']['upper_bound_lr_decay']
     USE_BFLOAT16 = config['training']['use_bfloat16']
     USE_NEPTUNE = config['training']['use_neptune']
     USE_TENSORBOARD = config['training']['use_tensorboard']
@@ -231,9 +234,12 @@ def main(args):
                                              cosine_lower_bound_lr=COSINE_LOWER_BOUND_LR,
                                              warmup_start_lr=WARMUP_START_LR,
                                              warmup_steps=WARMUP_STEPS,
-                                             num_steps_to_restart_lr=NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
+                                             initial_num_steps_to_restart_lr=INITIAL_NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
+                                             final_num_steps_to_restart_lr=FINAL_NUM_EPOCH_TO_RESTART_LR*ITERATIONS_PER_EPOCH,
+                                             epoch_idx_to_increase_restarts=EPOCH_IDX_TO_INCREASE_RESTARTS,
                                              cosine_upper_bound_wd=COSINE_UPPER_BOUND_WD,
                                              cosine_lower_bound_wd=COSINE_LOWER_BOUND_WD,
+                                             upper_bound_lr_decay=UPPER_BOUND_LR_DECAY,
                                              logger=logger
                                             )
 
@@ -277,7 +283,7 @@ def main(args):
         
 
         try:
-            for idx, data in tqdm(enumerate(DATALOADER)):   
+            for idx, data in tqdm(enumerate(DATALOADER)):  
          
 
                 images = data['images'].to(DEVICE)
@@ -296,7 +302,7 @@ def main(args):
                     OPTIMIZER.step()
                 
                 OPTIMIZER.zero_grad()
-                _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step()
+                _new_lr, _new_wd = OPTIM_AND_SCHEDULERS.step(epoch_idx=epoch_idx)
 
                 if USE_NEPTUNE:
                     NEPTUNE_RUN['train/lr'].append(_new_lr)

@@ -9,6 +9,7 @@ import torch.optim as optim
 class InitOptimWithSGDR:
     '''Initialize an Optimizer with Stochastic Gradient Descent with Restarts (SGDR a.k.a Cosine Annealing) with Linear WarmUp strategy and weight decay (L2 Regularization).
        The weight decay rate will also be calculated using the cosine annealing strategy.
+       The implementation here will use more frequent restarts, then after the ```epoch_idx_to_increase_restarts```, the restarts will be much infrequent.
     '''
 
 
@@ -18,19 +19,27 @@ class InitOptimWithSGDR:
                  cosine_lower_bound_lr, 
                  warmup_start_lr, 
                  warmup_steps,
-                 num_steps_to_restart_lr,
+                 initial_num_steps_to_restart_lr,
+                 final_num_steps_to_restart_lr,
+                 epoch_idx_to_increase_restarts,
                  cosine_upper_bound_wd,
                  cosine_lower_bound_wd,
+                 upper_bound_lr_decay,
                  logger=None):
 
         self.cosine_upper_bound_lr = cosine_upper_bound_lr
         self.cosine_lower_bound_lr = cosine_lower_bound_lr
         self.warmup_start_lr = warmup_start_lr
         self.warmup_steps = warmup_steps
-        self.num_steps_to_restart_lr = num_steps_to_restart_lr
+        self.num_steps_to_restart_lr = initial_num_steps_to_restart_lr #the LHS value will get replaced with ```final_num_steps_to_restart_lr``` later.
+        self.final_num_steps_to_restart_lr = final_num_steps_to_restart_lr
+        self.epoch_idx_to_increase_restarts = epoch_idx_to_increase_restarts
         self.step_counter = 0
         self.cosine_upper_bound_wd = cosine_upper_bound_wd
         self.cosine_lower_bound_wd = cosine_lower_bound_wd
+        self.upper_bound_lr_decay = upper_bound_lr_decay
+        self.transition_flag = False #boolean used to keep track of the epoch has surpassed the ```epoch_idx_to_increase_restarts```.
+
 
         self.logger = logger
 
@@ -68,7 +77,7 @@ class InitOptimWithSGDR:
     
 
 
-    def step(self):
+    def step(self, epoch_idx=None):
         '''Must be executed at every iteration step (not epoch step).
         '''
 
@@ -87,11 +96,23 @@ class InitOptimWithSGDR:
                                                                            fraction_term=fraction_term))
 
             
+
+
+
+            #it's >= in case a trained model is loaded after the said epoch value.
+            if epoch_idx >= self.epoch_idx_to_increase_restarts and not self.transition_flag: #transition to the bigger num of steps to restart.
+
+                self.num_steps_to_restart_lr = self.final_num_steps_to_restart_lr
+                self.cosine_upper_bound_lr = self.cosine_upper_bound_lr * self.upper_bound_lr_decay
+
+                self.transition_flag = True #this block of code will never be executed again.
+
+
             #once the learning rate reaches the lower bound, restart the learning rate back to the upper bound value.
             if new_lr == self.cosine_lower_bound_lr:
                 self.step_counter += self.num_steps_to_restart_lr
 
-            
+                
         
         #calculate the weight decay rate. There is no warmup period for decay rate and we will be using the same num of steps we used for lr for the restart.
         fraction_term = self.step_counter / self.num_steps_to_restart_lr
