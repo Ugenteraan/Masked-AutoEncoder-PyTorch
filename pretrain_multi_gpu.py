@@ -116,7 +116,7 @@ def main(gpu, args):
 
     #Training configurations
     DEVICE = config['training']['device']
-    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
+    DEVICE = torch.device(f"cuda:{gpu}" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
     LOAD_CHECKPOINT = config['training']['load_checkpoint']
     LOAD_CHECKPOINT_EPOCH = config['training']['load_checkpoint_epoch']
     END_EPOCH = config['training']['end_epoch']
