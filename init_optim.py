@@ -100,12 +100,13 @@ class InitOptimWithSGDR:
 
 
             #it's >= in case a trained model is loaded after the said epoch value.
-            if epoch_idx >= self.epoch_idx_to_increase_restarts and not self.transition_flag: #transition to the bigger num of steps to restart.
+            if not epoch_idx is None:
+                if epoch_idx >= self.epoch_idx_to_increase_restarts and not self.transition_flag: #transition to the bigger num of steps to restart.
 
-                self.num_steps_to_restart_lr = self.final_num_steps_to_restart_lr
-                self.cosine_upper_bound_lr = self.cosine_upper_bound_lr * self.upper_bound_lr_decay
+                    self.num_steps_to_restart_lr = self.final_num_steps_to_restart_lr
+                    self.cosine_upper_bound_lr = self.cosine_upper_bound_lr * self.upper_bound_lr_decay
 
-                self.transition_flag = True #this block of code will never be executed again.
+                    self.transition_flag = True #this block of code will never be executed again.
 
 
             #once the learning rate reaches the lower bound, restart the learning rate back to the upper bound value.
