@@ -19,6 +19,10 @@ def run_script():
 			print("Segmentation fault occured, restarting script...")
 			time.sleep(2)
 
+		elif process.returncode == 132:
+			print("Illegal instruction occured... restarting script")
+			time.sleep(2)
+
 		else:
 			print("Process has been stopped, exiting...")
 			break

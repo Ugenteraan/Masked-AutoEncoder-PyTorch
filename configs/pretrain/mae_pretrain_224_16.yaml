@@ -54,7 +54,7 @@ training:
     cosine_lower_bound_wd : 1.0e-4
     initial_num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
     final_num_epoch_to_restart_lr: 40 #this will take effect after the epoch_idx_to_increase_restarts, overwriting initial_num_epochs_to_restart_lr.
-    epoch_idx_to_increase_restarts: 100 #after this epoch, the final_num_epoch_to_restart_lr will take effect.
-    upper_bound_lr_decay: 0.85
+    epoch_idx_to_increase_restarts: 60 #after this epoch, the final_num_epoch_to_restart_lr will take effect.
+    upper_bound_lr_decay: 0.8
     warmup_start_lr : 5.0e-7 #learning rate starts here.
     warmup_steps : 5000 #iteration step. Not epoch step.
