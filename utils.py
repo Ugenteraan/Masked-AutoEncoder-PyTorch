@@ -20,6 +20,7 @@ def load_checkpoint(model_save_folder,
         else:
             checkpoint = torch.load(f"{model_save_folder.rstrip('/')}/{model_name}-latest.pth.tar")
 
+        mae_model.load_state_dict(checkpoint) #load the weights into the model
         epoch = checkpoint['epoch']
         if not logger is None:
             logger.info(f"Checkpoint from epoch {epoch} is successfully loaded! Extracting the parameters to load to individual model/variabels now...")
