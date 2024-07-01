@@ -188,6 +188,93 @@ class LoadUnlabelledDataset(Dataset):
         }
 
 
+class LoadLabelledDataset(Dataset):
+    '''Loads labelled dataset from the given path.
+    '''
+
+    def repeat_tensor(self, x):
+        '''To change grayscale image arrays to RGB-like arrays.
+        '''
+        return x.repeat(int(3 / x.shape[0]), 1, 1)
+
+    def __init__(self, dataset_folder_path, image_size=224,  train=True, use_random_horizontal_flip=False):
+
+        assert not dataset_folder_path is None, "Path to the dataset must be provided!"
+
+        self.dataset_folder_path = dataset_folder_path
+        self.image_size = image_size
+        self.train = train
+        self.classes = sorted(self.get_classnames())
+        self.image_path_label = self.read_folder()
+
+
+        transformation_list = [
+                                transforms.Resize((self.image_size, self.image_size)),
+                                transforms.ToTensor(),
+                                transforms.Lambda(self.repeat_tensor),
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                              ]
+
+        if use_random_horizontal_flip:
+            transformation_list.insert(0, transforms.RandomHorizontalFlip())
+
+        self.transform = transforms.Compose(transformation_list)
+
+    def get_classnames(self):
+        '''Return the name of all the classes in the dataset. The classes are expected to be the folder's name.
+        '''
+        return os.listdir(f"{self.dataset_folder_path.rstrip('/'}/train/") #we get all the classnames from the train folder.
+
+    def read_folder(self):
+        '''Reads the folder for the images with their corresponding label (foldername).
+        '''
+
+        image_path_label = []
+        
+        if self.train:
+            folder_path = f"{self.dataset_folder_path.rstrip('/')}/train/"
+        else:
+            folder_path = f"{self.dataset_folder_path.rstrip('/')}/test/"
+
+
+        for x in glob.glob(folder_path + '**', recursive=True):
+
+            if not x.endswith('jpg') or not x.endswith('png') or not x.endswith('jpeg') or not x.endswith('bmp'):
+                continue
+
+            class_idx = self.classes.index(x.split('/')[-2])
+            image_path_label.append((x, int(class_idx)))
+
+        return image_path_label
+
+
+    def __len__(self):
+        return len(self.image_path_label)
+
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        image_path, label = self.image_path_label[idx]
+
+        try:
+            image = Image.open(image_path).convert('RGB')
+
+        except Exception as err:
+
+            if self.logger is not None:
+                self.logger.error(f"{image_path}")
+                self.logger.error(f"Error loading image: {err}")
+            sys.exit()
+
+        if self.transform:
+            image = self.transform(image)
+
+        return {'images': image,
+                'labels': label}
+
+         
 
 # if __name__ == '__main__':
 

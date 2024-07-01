@@ -1,0 +1,12 @@
+env: development
+
+data:
+  batch_size: 128
+  image_size: 224
+  image_depth: 3
+  dataset_folder: ./dataset/dog_breed_classification/downstream/
+  num_workers: 12
+  shuffle: true
+  use_random_horizontal_flip: true
+
+
