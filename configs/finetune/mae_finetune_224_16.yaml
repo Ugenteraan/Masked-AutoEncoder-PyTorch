@@ -24,6 +24,18 @@ model:
   classification_expansion_factor: 4
 
 
+training:
+  device: gpu
+  load_checkpoint: true
+  load_checkpoint_epoch: null
+  start_epoch : 0
+  end_epoch : 100
+  use_bfloat16: true
+  use_neptune: true
+  use_tensorboard: true
+  use_profiler: false
+  learning_rate: 1.0e-4
+
 
 
 

@@ -101,3 +101,23 @@ def remove_old_models(N_models_to_keep, model_save_folder):
                 os.remove(x)
 
     return None
+
+
+def calculate_accuracy(predicted, target):
+    '''Calculates the accuracy of the prediction.
+    '''
+
+    num_data = target.size()[0]
+    predicted = torch.argmax(predicted, dim=1)
+
+    correct_pred = torch.sum(predicted == target)
+
+    acuracy = (correct_pred/num_data)*100
+
+    return accuracy.item()
+
+
+
+
+
+

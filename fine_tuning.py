@@ -17,6 +17,9 @@ from loguru import logger
 import argparse
 import yaml
 
+
+from torch.utils.data import DataLoader
+
 from models.finetune_model import PretrainedEncoder, FineTuneModelClassification
 
 
@@ -98,6 +101,12 @@ def main(args):
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and DEVICE=='gpu' else 'cpu')
     LOAD_CHECKPOINT = config['training']['load_checkpoint']
     LOAD_CHECKPOINT_EPOCH = config['training']['load_checkpoint_epoch']
+    END_EPOCH = config['training']['end_epoch']
+    START_EPOCH = config['training']['start_epoch']
+    USE_BFLOAT16 = config['training']['use_bfloat16']
+    USE_NEPTUNE = config['training']['use_neptune']
+    USE_TENSORBOARD = config['training']['use_tensorboard']
+    USE_PROFILER = config['training']['use_profiler']
 
 
 
@@ -144,17 +153,114 @@ def main(args):
     TRAIN_DATASET_MODULE = LoadLabelledDataset(dataset_folder_path=DATASET_FOLDER)
     TEST_DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, train=False)
     
-     
 
+    TRAIN_DATALOADER = DataLoader(TRAIN_DATASET_MODULE, 
+                                  batch_size=BATCH_SIZE, 
+                                  shuffle=SHUFFLE, 
+                                  num_workers=NUM_WORKERS)
+
+
+    TEST_DATALOADER = DataLoader(TEST_DATASET_MODULE, 
+                                  batch_size=BATCH_SIZE, 
+                                  shuffle=False, 
+                                  num_workers=NUM_WORKERS)
 
     
-
-   
+    OPTIMIZER = AdamW(CLASSIFICATION_NETWORK.parameters(), lr=LEARNING_RATE)
+    CRITERION = torch.nn.CrossEntropyLoss()
 
     
+    SCALER = None
+
+    #scaler is used to scale the values in variables like state_dict, optimizer etc to bfloat16 type.
+    if USE_BFLOAT16:
+        SCALER = torch.cuda.amp.GradScaler()
+    
+    
+    ENCODER_NETWORK.eval()
+
+    for epoch_idx in range(START_EPOCH, END_EPOCH):
+
+        logger.info(f"Training has started for epoch {epoch_idx}")
+
+        
+        CLASSIFICATION_NETWORK.train()
+
+        train_running_loss = 0
+        train_running_accuracy= 0
+        train_idx = 0
+
+        for train_idx, data in enumerate(TRAIN_DATALOADER):
+
+            OPTIMIZER.zero_grad() 
+
+            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+
+                batch_x, batch_y =  data['images'].to(DEVICE), data['labels'].to(DEVICE)
+
+                feature_tensor = ENCODER_NETWORK(batch_x)
+                prediction = CLASSIFICATION_NETWORK(feature_tensor)
+
+            batch_loss = CRITERION(input=prediction, target=batch_y)
+            
+            train_running_loss += batch_loss.item()
+            train_running_accuracy += calculate_accuracy(predicted=prediction, target=batch_y)
+
+            #backward and step
+            if USE_BFLOAT16:
+                SCALER.scale(batch_loss).backward()
+                SCALER.step(OPTIMIZER)
+                SCALER.update()
+            else:
+                batch_loss.backward()
+                OPTIMIZER.step()
+
+        
+        train_total_loss = train_running_loss
+        train_total_accuracy = train_running_accuracy/(train_idx+1)
+
+        logger.info(f"Total train loss at epoch {epoch_idx} is {train_total_loss}")
+        logger.info(f"Total train accuracy at epoch {epoch_idx} is {train_total_accuracy}")
+        
+        
+        test_idx = 0
+        test_running_loss = 0
+        test_running_accuracy = 0
+
+        for test_idx, data in enumerate(TEST_DATALOADER):
+            
+            CLASSIFICATION_NETWORK.eval()
+            with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=USE_BFLOAT16):
+                batch_x, batch_y =  data['images'].to(DEVICE), data['labels'].to(DEVICE)
+
+                feature_tensor = ENCODER_NETWORK(batch_x)
+                prediction = CLASSIFICATION_NETWORK(feature_tensor)
+
+            batch_loss = CRITERION(input=prediction, target=batch_y)
+            
+            test_running_loss += batch_loss.item()
+            test_running_accuracy += calculate_accuracy(predicted=prediction, target=batch_y)
+
+        test_total_loss = train_test_loss
+        test_total_accuracy = train_test_accuracy/(test_idx+1)
+
+        logger.info(f"Total test loss at epoch {epoch_idx} is {test_total_loss}")
+        logger.info(f"Total test accuracy at epoch {epoch_idx} is {test_total_accuracy}")
 
 
+        
+        if USE_NEPTUNE:
+            NEPTUNE_RUN['train/loss_per_epoch'].append(train_total_loss)
+            NEPTUNE_RUN['train/accuracy_per_epoch'].append(train_total_accuracy)
+            NEPTUNE_RUN['test/loss_per_epoch'].append(test_total_loss)
+            NEPTUNE_RUN['test/accuracy_per_epoch'].append(test_total_accuracy)
 
+        
+        if USE_TENSORBOARD:
+            TB_WRITER.add_scalar("Loss/train", train_total_loss , epoch_idx)
+            TB_WRITER.add_scalar("Accuracy/train", train_total_accuracy, epoch_idx)
+            TB_WRITER.add_scalar("Loss/test", test_total_loss, epoch_idx)
+            TB_WRITER.add_scalar("Accuracy/train", test_total_accuracy, epoch_idx)
 
 
 if __name__ == '__main__':
