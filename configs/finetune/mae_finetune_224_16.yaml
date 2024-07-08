@@ -8,5 +8,22 @@ data:
   num_workers: 12
   shuffle: true
   use_random_horizontal_flip: true
+  num_class: 77
+
+
+model:
+  model_save_folder: ./artifacts/finetune/
+  model_save_freq: 2 #save every N epoch.
+  N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
+  model_name: mae-finetune
+  encoder_transformer_blocks_depth: 12
+  encoder_embedding_dim: 512   
+  encoder_mlp_ratio: 4
+  encoder_num_heads: 8
+  attn_dropout_prob: 0
+  classification_expansion_factor: 4
+
+
+
 
 
