@@ -197,33 +197,11 @@ class LoadLabelledDataset(Dataset):
         '''
         return x.repeat(int(3 / x.shape[0]), 1, 1)
 
-    def __init__(self, dataset_folder_path, image_size=224,  train=True, use_random_horizontal_flip=False):
-
-        assert not dataset_folder_path is None, "Path to the dataset must be provided!"
-
-        self.dataset_folder_path = dataset_folder_path
-        self.image_size = image_size
-        self.train = train
-        self.classes = sorted(self.get_classnames())
-        self.image_path_label = self.read_folder()
-
-
-        transformation_list = [
-                                transforms.Resize((self.image_size, self.image_size)),
-                                transforms.ToTensor(),
-                                transforms.Lambda(self.repeat_tensor),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                              ]
-
-        if use_random_horizontal_flip:
-            transformation_list.insert(0, transforms.RandomHorizontalFlip())
-
-        self.transform = transforms.Compose(transformation_list)
 
     def get_classnames(self):
         '''Return the name of all the classes in the dataset. The classes are expected to be the folder's name.
         '''
-        return os.listdir(f"{self.dataset_folder_path.rstrip('/'}/train/") #we get all the classnames from the train folder.
+        return os.listdir(f"{self.dataset_folder_path.rstrip('/')}/train/") #we get all the classnames from the train folder.
 
     def read_folder(self):
         '''Reads the folder for the images with their corresponding label (foldername).
@@ -238,14 +216,40 @@ class LoadLabelledDataset(Dataset):
 
 
         for x in glob.glob(folder_path + '**', recursive=True):
-
-            if not x.endswith('jpg') or not x.endswith('png') or not x.endswith('jpeg') or not x.endswith('bmp'):
+            
+            if not x.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
                 continue
 
             class_idx = self.classes.index(x.split('/')[-2])
             image_path_label.append((x, int(class_idx)))
+            
 
         return image_path_label
+
+
+    def __init__(self, dataset_folder_path, image_size=224,  train=True, use_random_horizontal_flip=False):
+
+        assert not dataset_folder_path is None, "Path to the dataset must be provided!"
+
+        self.dataset_folder_path = dataset_folder_path
+        self.image_size = image_size
+        self.train = train
+        self.classes = sorted(self.get_classnames())
+        self.image_path_label = self.read_folder()
+
+
+
+        transformation_list = [
+                                transforms.Resize((self.image_size, self.image_size)),
+                                transforms.ToTensor(),
+                                transforms.Lambda(self.repeat_tensor),
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                              ]
+
+        if use_random_horizontal_flip:
+            transformation_list.insert(0, transforms.RandomHorizontalFlip())
+
+        self.transform = transforms.Compose(transformation_list)
 
 
     def __len__(self):

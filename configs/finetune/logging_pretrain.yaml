@@ -1,5 +1,5 @@
 disable_default_loggers: true
-log_dir: ./logs/pretrain/ 
+log_dir: ./logs/finetune/ 
 log_filename: train.txt
 
 formatters:

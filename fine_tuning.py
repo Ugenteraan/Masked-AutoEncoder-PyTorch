@@ -16,11 +16,17 @@ import datetime
 from loguru import logger
 import argparse
 import yaml
-
-
+import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
+from pathlib import Path
+from torch.utils.tensorboard import SummaryWriter
+# from torch.profiler import profile, record_function, ProfilerActivity
 
 from models.finetune_model import PretrainedEncoder, FineTuneModelClassification
+from load_dataset import LoadLabelledDataset
+from utils import calculate_accuracy, load_encoder_checkpoint
+import cred
 
 
 
@@ -81,19 +87,21 @@ def main(args):
 
      
     #Model configurations.
+    LOAD_PRETRAINED = config['model']['load_pretrained']
+    PRETRAIN_MODEL_SAVE_FOLDER = config['model']['pretrain_model_save_folder']
+    PRETRAIN_MODEL_NAME = config['model']['pretrain_model_name']
     MODEL_SAVE_FOLDER = config['model']['model_save_folder']
     MODEL_NAME = config['model']['model_name']
     MODEL_SAVE_FREQ = config['model']['model_save_freq']
     N_SAVED_MODEL_TO_KEEP = config['model']['N_saved_model_to_keep']
+    PATCH_SIZE = config['model']['patch_size']
     ENCODER_TRANSFORMER_BLOCKS_DEPTH = config['model']['encoder_transformer_blocks_depth']
     ENCODER_EMBEDDING_DIM = config['model']['encoder_embedding_dim']
     ENCODER_MLP_RATIO = config['model']['encoder_mlp_ratio']
     ENCODER_NUM_HEADS = config['model']['encoder_num_heads']
     ATTN_DROPOUT_PROB = config['model']['attn_dropout_prob']
+    FEEDFORWARD_DROPOUT_PROB = config['model']['feedforward_dropout_prob']
     CLASSIFICATION_EXPANSION_FACTOR = config['model']['classification_expansion_factor']
-
-    #Mask configurations.
-    PATCH_SIZE = config['mask']['patch_size']
 
 
     #Training configurations
@@ -104,6 +112,7 @@ def main(args):
     END_EPOCH = config['training']['end_epoch']
     START_EPOCH = config['training']['start_epoch']
     USE_BFLOAT16 = config['training']['use_bfloat16']
+    LEARNING_RATE = config['training']['learning_rate']
     USE_NEPTUNE = config['training']['use_neptune']
     USE_TENSORBOARD = config['training']['use_tensorboard']
     USE_PROFILER = config['training']['use_profiler']
@@ -137,8 +146,19 @@ def main(args):
                                          encoder_num_heads=ENCODER_NUM_HEADS,
                                          encoder_mlp_ratio=ENCODER_MLP_RATIO,
                                          attn_dropout_prob=ATTN_DROPOUT_PROB,
-                                         feedforward_dropout_prob,
-                                         logger=None)
+                                         feedforward_dropout_prob=FEEDFORWARD_DROPOUT_PROB,
+                                         logger=None).to(DEVICE)
+
+
+
+    #load the pretrained model weights.
+    if LOAD_PRETRAINED:
+        ENCODER_NETWORK, _ = load_encoder_checkpoint(model_save_folder=PRETRAIN_MODEL_SAVE_FOLDER, 
+                                                  mae_model_name=PRETRAIN_MODEL_NAME, 
+                                                  encoder_model=ENCODER_NETWORK, 
+                                                  load_checkpoint_epoch=None, 
+                                                  logger=logger)
+
     
     
 
@@ -146,12 +166,12 @@ def main(args):
                                                          expansion_factor=CLASSIFICATION_EXPANSION_FACTOR,
                                                          num_class=NUM_CLASS,
                                                          device=DEVICE, 
-                                                         logger=None)
+                                                         logger=None).to(DEVICE)
 
 
       
     TRAIN_DATASET_MODULE = LoadLabelledDataset(dataset_folder_path=DATASET_FOLDER)
-    TEST_DATASET_MODULE = LoadUnlabelledDataset(dataset_folder_path=DATASET_FOLDER, train=False)
+    TEST_DATASET_MODULE = LoadLabelledDataset(dataset_folder_path=DATASET_FOLDER, train=False)
     
 
     TRAIN_DATALOADER = DataLoader(TRAIN_DATASET_MODULE, 
@@ -166,8 +186,8 @@ def main(args):
                                   num_workers=NUM_WORKERS)
 
     
-    OPTIMIZER = AdamW(CLASSIFICATION_NETWORK.parameters(), lr=LEARNING_RATE)
-    CRITERION = torch.nn.CrossEntropyLoss()
+    OPTIMIZER = torch.optim.AdamW(CLASSIFICATION_NETWORK.parameters(), lr=LEARNING_RATE)
+    CRITERION = torch.nn.CrossEntropyLoss().to(DEVICE)
 
     
     SCALER = None
@@ -201,10 +221,11 @@ def main(args):
                 feature_tensor = ENCODER_NETWORK(batch_x)
                 prediction = CLASSIFICATION_NETWORK(feature_tensor)
 
+            
             batch_loss = CRITERION(input=prediction, target=batch_y)
             
             train_running_loss += batch_loss.item()
-            train_running_accuracy += calculate_accuracy(predicted=prediction, target=batch_y)
+            train_running_accuracy += calculate_accuracy(predicted=prediction.detach(), target=batch_y)
 
             #backward and step
             if USE_BFLOAT16:
@@ -239,10 +260,10 @@ def main(args):
             batch_loss = CRITERION(input=prediction, target=batch_y)
             
             test_running_loss += batch_loss.item()
-            test_running_accuracy += calculate_accuracy(predicted=prediction, target=batch_y)
+            test_running_accuracy += calculate_accuracy(predicted=prediction.detach(), target=batch_y)
 
-        test_total_loss = train_test_loss
-        test_total_accuracy = train_test_accuracy/(test_idx+1)
+        test_total_loss = test_running_loss
+        test_total_accuracy = test_running_accuracy/(test_idx+1)
 
         logger.info(f"Total test loss at epoch {epoch_idx} is {test_total_loss}")
         logger.info(f"Total test accuracy at epoch {epoch_idx} is {test_total_accuracy}")
@@ -264,4 +285,9 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', required=True, type=str, help='Specify the YAML config file to be used.')
+    parser.add_argument('--logging_config', required=True, type=str, help='Specify the YAML config file to be used for the logging module.')
+    args = parser.parse_args()
+    main(args)

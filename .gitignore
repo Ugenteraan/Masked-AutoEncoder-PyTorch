@@ -29,6 +29,9 @@ MANIFEST
 .neptune/**
 dataset/**
 artifacts/**
+artifacts_tensordock/**
+**/*.zip
+**/*.tar
 **/cred.py
 # PyInstaller
 #  Usually these files are written by a python script from a template
