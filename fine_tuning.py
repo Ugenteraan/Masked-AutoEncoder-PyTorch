@@ -4,7 +4,7 @@ The idea here is to:
     2) Build a transformer model that are identical to the encoder of the trained MAE's encoder.
     3) Add extra (few) layer(s) at the back of the model to perform the downstream task.
     4) Load the model.
-    5) Make sure the layers of the encoder are mostly frozen. In this script, we're allowing the last few layers of the trained encoder to fine-tune their weights.
+    5) Make sure the layers of the encoder are mostly frozen. In this script, we're only training the new network. The pretrained model are completely frozen.
     6) Train this newly initialized model.
     7) Perform evaluation.
     8) Optionally, we will also run another evaluation without the pre-trained model's weights. This is to see the effectiveness of the trained model.
@@ -25,7 +25,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from models.finetune_model import PretrainedEncoder, FineTuneModelClassification
 from load_dataset import LoadLabelledDataset
-from utils import calculate_accuracy, load_encoder_checkpoint
+from utils import calculate_accuracy, load_encoder_checkpoint, save_both_model_checkpoint
 import cred
 
 
@@ -199,6 +199,10 @@ def main(args):
     
     ENCODER_NETWORK.eval()
 
+
+    logger.info(f"Total number of training dataset: {len(TRAIN_DATASET_MODULE)}")
+    logger.info(f"Total number of testing dataset: {len(TEST_DATASET_MODULE)}")
+
     for epoch_idx in range(START_EPOCH, END_EPOCH):
 
         logger.info(f"Training has started for epoch {epoch_idx}")
@@ -282,6 +286,19 @@ def main(args):
             TB_WRITER.add_scalar("Accuracy/train", train_total_accuracy, epoch_idx)
             TB_WRITER.add_scalar("Loss/test", test_total_loss, epoch_idx)
             TB_WRITER.add_scalar("Accuracy/train", test_total_accuracy, epoch_idx)
+
+        if epoch_idx % MODEL_SAVE_FREQ == 0:
+            
+            save_both_model_checkpoint(model_save_folder=MODEL_SAVE_FOLDER, 
+                    model_name=MODEL_NAME, 
+                    pretrained_model=ENCODER_NETWORK,
+                    finetuned_model=CLASSIFICATION_NETWORK, 
+                    scaler=SCALER, 
+                    epoch=epoch_idx, 
+                    loss=train_total_loss, 
+                    N_models_to_keep=N_SAVED_MODEL_TO_KEEP, 
+                    logger=logger
+                    )
 
 
 if __name__ == '__main__':

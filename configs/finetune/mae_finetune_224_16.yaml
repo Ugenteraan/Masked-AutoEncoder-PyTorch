@@ -12,10 +12,10 @@ data:
 
 
 model:
-  load_pretrained: True
+  load_pretrained: False
   pretrain_model_save_folder: ./artifacts/pretrain/
   pretrain_model_name: mae-pretrain
-  model_save_folder: ./artifacts/finetune/
+  model_save_folder: ./artifacts/finetune/pretrain_true/
   model_save_freq: 2 #save every N epoch.
   N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
   model_name: mae-finetune
@@ -34,7 +34,7 @@ training:
   load_checkpoint: true
   load_checkpoint_epoch: null
   start_epoch : 0
-  end_epoch : 100
+  end_epoch : 20
   use_bfloat16: true
   use_neptune: true
   use_tensorboard: false

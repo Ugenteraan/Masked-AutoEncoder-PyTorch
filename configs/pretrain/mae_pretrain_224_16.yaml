@@ -45,7 +45,7 @@ training:
   end_epoch : 10000
   use_bfloat16: true
   use_neptune: false
-  use_tensorboard: true
+  use_tensorboard: false
   use_profiler: false
   cosine_annealing:
     cosine_upper_bound_lr : 1.0e-4
