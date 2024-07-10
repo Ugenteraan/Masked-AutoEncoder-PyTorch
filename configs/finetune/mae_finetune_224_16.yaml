@@ -1,0 +1,46 @@
+env: development
+
+data:
+  batch_size: 64
+  image_size: 224
+  image_depth: 3
+  dataset_folder: ./dataset/dog_breed_classification/downstream/
+  num_workers: 12
+  shuffle: true
+  use_random_horizontal_flip: true
+  num_class: 77
+
+
+model:
+  load_pretrained: False
+  pretrain_model_save_folder: ./artifacts/pretrain/
+  pretrain_model_name: mae-pretrain
+  model_save_folder: ./artifacts/finetune/pretrain_true/
+  model_save_freq: 2 #save every N epoch.
+  N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
+  model_name: mae-finetune
+  patch_size: 16
+  encoder_transformer_blocks_depth: 12
+  encoder_embedding_dim: 1024   
+  encoder_mlp_ratio: 4
+  encoder_num_heads: 8
+  attn_dropout_prob: .0
+  feedforward_dropout_prob: .0
+  classification_expansion_factor: 4
+
+
+training:
+  device: gpu
+  load_checkpoint: true
+  load_checkpoint_epoch: null
+  start_epoch : 0
+  end_epoch : 20
+  use_bfloat16: true
+  use_neptune: true
+  use_tensorboard: false
+  use_profiler: false
+  learning_rate: 1.0e-4
+
+
+
+

@@ -1,0 +1,60 @@
+
+env: development
+data:
+  batch_size: 128
+  image_size: 224
+  image_depth: 3
+  dataset_folder: ./dataset/dog_breed_classification/downstream/
+  num_workers: 24
+  shuffle: true
+  use_random_horizontal_flip: true
+  normalize_pixel: true
+  deeplake_ds_name: 'imagenet'
+
+mask:
+  patch_size: 16
+  masking_ratio: 0.75
+
+visualization:
+  visualize_batch_size: 5
+  fig_savepath: ./figures/
+  num_figs: 5
+  visualize_freq: 2 #visualize the predictions per N epoch.
+
+model:
+  model_save_folder: ./artifacts/pretrain/
+  model_save_freq: 2 #save every N epoch.
+  N_saved_model_to_keep: 20 #keep the last N number of saved models and delete the earlier ones.
+  model_name: mae-pretrain
+  encoder_transformer_blocks_depth: 12
+  decoder_transformer_blocks_depth: 8
+  encoder_embedding_dim: 512   
+  decoder_embedding_dim: 256
+  encoder_mlp_ratio: 4
+  decoder_mlp_ratio: 4
+  encoder_num_heads: 8
+  decoder_num_heads: 8
+  attn_dropout_prob: .05
+  feedforward_dropout_prob: .1
+
+training:
+  device: gpu
+  load_checkpoint: true
+  load_checkpoint_epoch: null
+  start_epoch : 0
+  end_epoch : 10000
+  use_bfloat16: true
+  use_neptune: false
+  use_tensorboard: false
+  use_profiler: false
+  cosine_annealing:
+    cosine_upper_bound_lr : 1.0e-4
+    cosine_lower_bound_lr : 1.0e-6
+    cosine_upper_bound_wd : 1.0e-2
+    cosine_lower_bound_wd : 1.0e-4
+    initial_num_epoch_to_restart_lr : 10 #will be multiplied by iterations per epoch later since we're using the scale of steps for everything in the code.
+    final_num_epoch_to_restart_lr: 40 #this will take effect after the epoch_idx_to_increase_restarts, overwriting initial_num_epochs_to_restart_lr.
+    epoch_idx_to_increase_restarts: 60 #after this epoch, the final_num_epoch_to_restart_lr will take effect.
+    upper_bound_lr_decay: 0.8
+    warmup_start_lr : 5.0e-7 #learning rate starts here.
+    warmup_steps : 5000 #iteration step. Not epoch step.
