@@ -24,7 +24,14 @@ Make sure that the weights of the pretrained model is placed at the appropriate 
 python finetune.py --config configs/finetune/mae_finetune_224_16.yaml --logging_config configs/finetune/logging_finetune.yaml
 ```
 
+## License
 
+[![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
+
+This work is licensed under a [Creative Commons Attribution-NonCommercial 4.0 International License][cc-by-nc].
+
+[cc-by-nc]: https://creativecommons.org/licenses/by-nc/4.0/
+[cc-by-nc-shield]: https://licensebuttons.net/l/by-nc/4.0/80x15.png
 
 
 
