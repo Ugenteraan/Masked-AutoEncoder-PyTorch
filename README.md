@@ -16,6 +16,8 @@ To start the pretraining, first place a folder of dataset (unlabelled) and chang
 python pretrain.py --config configs/pretrain/mae_pretrain_224_16.yaml --logging_config configs/pretrain/logging_pretrain.yaml
 ```
 
+During the training, the visualizations of the reconstruction will be saved in the ```figures``` folder. You can refer to my results in the folder.
+
 ## Classification Downstream
 
 Make sure that the weights of the pretrained model is placed at the appropriate location (depends on your configurations) and that the same configurations on the model from pretraining is used here as well at ```Masked-AutoEncoder-PyTorch/configs/finetune/mae_finetune_224_16.yaml```. Here, the dataset needs to be labelled - place the images separately in folders according to their classes. Then, start the training with
