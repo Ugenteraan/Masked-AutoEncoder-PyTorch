@@ -43,7 +43,7 @@ Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All th
 <!--  </div>-->
 <!--</figure>-->
 
-| ![Loss over 1100 epochs - Image 1](train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG) | ![Loss over 1100 epochs - Image 2](train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG) |
+| ![Reconstruction at epoch 2](train_reconstructions/9c5eb979-3d47-48f8-acad-f0604aca3044.PNG) | ![Reconstruction at epoch 1100](train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG) |
 |:--:|:--:|
 | Loss over 1100 epochs - Image 1 | Loss over 1100 epochs - Image 2 |
 
