@@ -61,13 +61,13 @@ Both the training and testing above were done on their respective dataset as pre
 
 ### Downstream Comparison
 
-As a sanity check, I re-trained the downstream model but this time, without loading the weights from the trained MAE encoder.
+As a sanity check, I ran another similar expriment of the downstream task but this time, without loading the weights from the trained MAE encoder.
 
 | ![Train Accuracy with MAE](readme_images/train_accuracy_without_mae_downstream.png) | ![Test Accuracy with MAE](readme_images/test_accuracy_without_mae_downstream.png) |
 |:--:|:--:|
 | Train Accuracy without MAE | Test Accuracy without MAE |
 
-It's clear that the weight from the encoder makes a very huge difference. This shows that the concept of MAE works. 
+Both the accuracies barely reached 3% over the 20 epochs. It's clear that the weight from the encoder makes a very huge difference. This shows that the concept of MAE works. 
 
 ## Pretraining the MAE
 
