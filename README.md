@@ -33,15 +33,16 @@ Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All th
 <figure class="image">
   <div style="display: flex; justify-content: center;">
     <div align="center" style="margin: 0 10px;">
-      <img src="readme_images/train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="400">
+      <img src="train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="400">
       <figcaption>First epoch's reconstruction result.</figcaption>
     </div>
     <div align="center" style="margin: 0 10px;">
-      <img src="readme_images/train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="400">
+      <img src="train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="400">
       <figcaption>Final epoch's reconstruction result.</figcaption>
     </div>
   </div>
 </figure>
+
 
 
 ## Pretraining the MAE
