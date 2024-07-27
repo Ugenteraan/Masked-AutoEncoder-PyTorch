@@ -1,7 +1,7 @@
 # Table of Contents
 1. [Introduction](#introduction)
 2. [Experimental Results](#experimentalresults)
-   2.1 [Dataset](##dataset)
+   1. [Dataset](#dataset)
 4. [Usage](#usage)
 5. [Contributing](#contributing)
 6. [License](#license)
@@ -15,7 +15,7 @@ The idea of MAE is to leverage a huge set of unlabelled data (images) to learn r
 
 # Experimental Results <a name="experimentalresults"></a>
 
-## Dataset
+## Dataset <a name="dataset"></a>
 I segregated the dataset from [Kaggle's Doges 77 Breeds](https://www.kaggle.com/datasets/madibokishev/doges-77-breeds) into three parts. About 10k images (labelled) to train the downstream classification part. About 5k images (labelled) to be used for testing/evaluating the final downstream-ed model. And, lastly the remaining data (labels removed) to train the MAE itself without any labels (about 300k+ images). There were also a few thousands of random dog pictures included in this last set.
 
 ## MAE Training
