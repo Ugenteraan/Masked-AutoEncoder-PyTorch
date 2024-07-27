@@ -7,7 +7,7 @@ The idea of MAE is to leverage a huge set of unlabelled data (images) to learn r
 ## Experimental Results
 
 ### Dataset
-I segregated the dataset from [Kaggle's Doges 77 Breeds](https://www.kaggle.com/datasets/madibokishev/doges-77-breeds) into three parts. About 10k images (labelled) to train the downstream classification part. About 5k images (labelled) to be used for testing/evaluating the final downstream-ed model. And, lastly the remaining data (labels removed) to train the MAE itself without any labels (about 300k+ images).
+I segregated the dataset from [Kaggle's Doges 77 Breeds](https://www.kaggle.com/datasets/madibokishev/doges-77-breeds) into three parts. About 10k images (labelled) to train the downstream classification part. About 5k images (labelled) to be used for testing/evaluating the final downstream-ed model. And, lastly the remaining data (labels removed) to train the MAE itself without any labels (about 300k+ images). There were also a few thousands of random dog pictures included in this last set.
 
 ### MAE Training
 
@@ -33,15 +33,22 @@ Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All th
 <figure class="image">
   <div style="display: flex; justify-content: center;">
     <div align="center" style="margin: 0 10px;">
-      <img src="train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="400">
+      <img src="train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="200">
       <figcaption>First epoch's reconstruction result.</figcaption>
     </div>
     <div align="center" style="margin: 0 10px;">
-      <img src="train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="400">
+      <img src="train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="200">
       <figcaption>Final epoch's reconstruction result.</figcaption>
     </div>
   </div>
 </figure>
+
+It is evident that the MAE was learning as intended. However, I could not get a really nice reconstruction as reported in the paper probably due to the size of my dataset and the relatively small architecture of MAE.
+
+### Downstream Training
+
+Using the weights of the encoder from the MAE above, classifier layers were added and fine-tuned. The fine-tuning is done by freezing the weights of the encoder fully. The result on the 10k dataset as mentioned is as below.
+
 
 
 
