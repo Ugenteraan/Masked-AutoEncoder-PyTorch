@@ -15,7 +15,7 @@ The pre-training part (training the MAE model itself) was done using 2 RTX 4090,
 
 The configurations used during the training is the exact same as in ```Masked-AutoEncoder-PyTorch/configs/pretrain/mae_pretrain_224_16.yaml```.
 
-The MAE's training loss is as shown below.
+The MAE's training loss is as shown below. The loss is not smooth due to the use of cosine annealing strategy, but I believe that cosine annealing contributed greatly to the overall reduction of loss from few experiments.
 
 <div align="center"> 
 <b>Training loss of MAE</b>
@@ -23,6 +23,24 @@ The MAE's training loss is as shown below.
 <figure class="image">
   <div align="center"><img src="readme_images/train_loss_mae.png" width="400"></div>
   <div align="center"><figcaption>Loss over 1100 epochs</figcaption></div>
+</figure>
+
+Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All the reconstructions can be found in the ```train_reconstructions``` folder. Figure below shows the reconstruction result on the first epoch and the last epoch.
+
+<div align="center"> 
+  <b>Training Loss of MAE</b>
+</div>
+<figure class="image">
+  <div style="display: flex; justify-content: center;">
+    <div align="center" style="margin: 0 10px;">
+      <img src="readme_images/train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="400">
+      <figcaption>First epoch's reconstruction result.</figcaption>
+    </div>
+    <div align="center" style="margin: 0 10px;">
+      <img src="readme_images/train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="400">
+      <figcaption>Final epoch's reconstruction result.</figcaption>
+    </div>
+  </div>
 </figure>
 
 
