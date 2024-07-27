@@ -45,7 +45,7 @@ Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All th
 
 | ![Reconstruction at epoch 2](train_reconstructions/9c5eb979-3d47-48f8-acad-f0604aca3044.PNG) | ![Reconstruction at epoch 1100](train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG) |
 |:--:|:--:|
-| Loss over 1100 epochs - Image 1 | Loss over 1100 epochs - Image 2 |
+| Reconstruction at epoch 2 | Reconstruction at epoch 1100 |
 
 It is evident that the MAE was learning as intended. However, I could not get a really nice reconstruction as reported in the paper probably due to the size of my dataset and the relatively small architecture of MAE.
 
@@ -53,8 +53,21 @@ It is evident that the MAE was learning as intended. However, I could not get a 
 
 Using the weights of the encoder from the MAE above, classifier layers were added and fine-tuned. The fine-tuning is done by freezing the weights of the encoder fully. The result on the 10k dataset as mentioned is as below.
 
+| ![Train Accuracy with MAE](readme_images/train_accuracy_mae_downstream.png) | ![Test Accuracy with MAE](readme_images/test_accuracy_mae_downstream.png) |
+|:--:|:--:|
+| Train Accuracy with MAE | Test Accuracy with MAE |
 
+Both the training and testing above were done on their respective dataset as previously described. In just 20 epochs, the training accuracy reached about 41% on the 77 classes while the test accuracy reached about 35%.
 
+### Downstream Comparison
+
+As a sanity check, I re-trained the downstream model but this time, without loading the weights from the trained MAE encoder.
+
+| ![Train Accuracy with MAE](readme_images/train_accuracy_without_mae_downstream.png) | ![Test Accuracy with MAE](readme_images/test_accuracy_without_mae_downstream.png) |
+|:--:|:--:|
+| Train Accuracy without MAE | Test Accuracy without MAE |
+
+It's clear that the weight from the encoder makes a very huge difference. This shows that the concept of MAE works. 
 
 ## Pretraining the MAE
 
@@ -68,7 +81,7 @@ To start the pretraining, first place a folder of dataset (unlabelled) and chang
 python pretrain.py --config configs/pretrain/mae_pretrain_224_16.yaml --logging_config configs/pretrain/logging_pretrain.yaml
 ```
 
-During the training, the visualizations of the reconstruction will be saved in the ```figures``` folder. You can refer to my results in the folder.
+During the training, the visualizations of the reconstruction will be saved in the ```figures``` folder. You can refer to my results in the ```train_reconstructions``` folder.
 
 ## Classification Downstream
 
@@ -80,6 +93,11 @@ python finetune.py --config configs/finetune/mae_finetune_224_16.yaml --logging_
 
 ## Acknowledgement
 I extend my sincere gratitude to [Beneufit, Inc.](https://beneufit.com/) for their generous funding and support. Their commitment to innovation made this project possible and has been a source of inspiration for me. Thank you, [Beneufit, Inc.](https://beneufit.com/), for your invaluable contribution.
+
+## Future Works
+
+I will further continue the experiments with other computer vision tasks such as object localization and pose estimations with the same trained weights. The objective here is to investigate whether or not that MAE is useful for various different computer vision tasks other than classification.
+
 
 ## License
 
