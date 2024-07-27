@@ -4,7 +4,7 @@
    1. [Dataset](#dataset)
    2. [MAE Training](#maetraining)
    3. [Downstream Training](#downstreamtraining)
-   4. [Downstream Comparison](#downstreamcomparison)
+   4. [Sanity Check](#sanitycheck)
 3. [How to Use](#howtouse)
    1. [Pretraining the MAE](#pretrainingthemae)
    2. [Classification Downstream](#classificationdownstream)
@@ -59,7 +59,7 @@ Using the weights of the encoder from the MAE above, classifier layers were adde
 
 Both the training and testing above were done on their respective dataset as previously described. In just 20 epochs, the training accuracy reached about 41% for the 77 classes while the test accuracy reached about 35%.
 
-## Downstream Comparison <a name="downstreamcomparison"></a>
+## Sanity Check <a name="sanitycheck"></a>
 
 As a sanity check, I ran another identical expriment of the downstream task except that this time, the pretrained weights of MAE's encoder were not loaded.
 
