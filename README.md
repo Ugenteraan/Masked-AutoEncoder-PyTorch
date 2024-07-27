@@ -30,7 +30,7 @@ The pre-training part (training the MAE model itself) was done using 2 RTX 4090,
 
 The configurations used during the training is the exact same as in ```Masked-AutoEncoder-PyTorch/configs/pretrain/mae_pretrain_224_16.yaml```.
 
-The MAE's training loss is as shown below. Cosine annealing was used as the learning rate strategy. I believe cosine annealing, though produces unsmooth loss graph, is the best way to reach a global optima.
+The MAE's training loss is as shown below. Cosine annealing was used as the learning rate strategy. I believe that cosine annealing, though produces unsmooth loss graph, is the best way to reach the global optima.
 
 <div align="center"> 
 <b>Training loss of MAE</b>
