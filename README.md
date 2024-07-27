@@ -15,7 +15,7 @@ The pre-training part (training the MAE model itself) was done using 2 RTX 4090,
 
 The configurations used during the training is the exact same as in ```Masked-AutoEncoder-PyTorch/configs/pretrain/mae_pretrain_224_16.yaml```.
 
-The MAE's training loss is as shown below. The loss is not smooth due to the use of cosine annealing strategy, but I believe that cosine annealing contributed greatly to the overall reduction of loss from few experiments.
+The MAE's training loss is as shown below. Cosine annealing was used as the learning rate strategy. I believe cosine annealing, though produces unsmooth loss graph, is the best way to reach a global optima.
 
 <div align="center"> 
 <b>Training loss of MAE</b>
@@ -25,7 +25,7 @@ The MAE's training loss is as shown below. The loss is not smooth due to the use
   <div align="center"><figcaption>Loss over 1100 epochs</figcaption></div>
 </figure>
 
-Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All the reconstructions can be found in the ```train_reconstructions``` folder. Figure below shows the reconstruction result on the first epoch and the last epoch.
+Meanwhile, the reconstructions output of MAE were plotted at every 2 epochs. All the reconstructions can be found in the ```train_reconstructions``` folder. Figure below shows the reconstruction result from the 3rd epoch and the last epoch.
 
 <!--<div align="center"> -->
 <!--  <b>Training Loss of MAE</b>-->
@@ -47,27 +47,27 @@ Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All th
 |:--:|:--:|
 | Reconstruction at epoch 2 | Reconstruction at epoch 1100 |
 
-It is evident that the MAE was learning as intended. However, I could not get a really nice reconstruction as reported in the paper probably due to the size of my dataset and the relatively small architecture of MAE.
+It is evident that the MAE was learning as intended. However, I could not achieve a near-perfect reconstruction as reported in the paper. This is probably due to the size of my dataset and the relatively small architecture of MAE used.
 
 ### Downstream Training
 
-Using the weights of the encoder from the MAE above, classifier layers were added and fine-tuned. The fine-tuning is done by freezing the weights of the encoder fully. The result on the 10k dataset as mentioned is as below.
+Using the weights of the encoder from the MAE above, classifier layers were added and fine-tuned. The fine-tuning is done by freezing the weights of the encoder fully. The results on the 10k downstream training dataset and the 5k testing dataset as mentioned previously are as below.
 
 | ![Train Accuracy with MAE](readme_images/train_accuracy_mae_downstream.png) | ![Test Accuracy with MAE](readme_images/test_accuracy_mae_downstream.png) |
 |:--:|:--:|
 | Train Accuracy with MAE | Test Accuracy with MAE |
 
-Both the training and testing above were done on their respective dataset as previously described. In just 20 epochs, the training accuracy reached about 41% on the 77 classes while the test accuracy reached about 35%.
+Both the training and testing above were done on their respective dataset as previously described. In just 20 epochs, the training accuracy reached about 41% for the 77 classes while the test accuracy reached about 35%.
 
 ### Downstream Comparison
 
-As a sanity check, I ran another similar expriment of the downstream task but this time, without loading the weights from the trained MAE encoder.
+As a sanity check, I ran another identical expriment of the downstream task except that this time, the pretrained weights of MAE's encoder were not loaded.
 
 | ![Train Accuracy with MAE](readme_images/train_accuracy_without_mae_downstream.png) | ![Test Accuracy with MAE](readme_images/test_accuracy_without_mae_downstream.png) |
 |:--:|:--:|
 | Train Accuracy without MAE | Test Accuracy without MAE |
 
-Both the accuracies barely reached 3% over the 20 epochs. It's clear that the weight from the encoder makes a very huge difference. This shows that the concept of MAE works. 
+The accuracies barely reached 3% over the 20 epochs. It's clear that the weights from the pretrained MAE encoder makes a large difference. This goes to show that the concept of MAE works. 
 
 ## Pretraining the MAE
 
