@@ -1,7 +1,7 @@
 # Table of Contents
 1. [Introduction](#introduction)
 2. [Experimental Results](#experimentalresults)
-   a. [Dataset](#dataset)
+   1. [Dataset](#dataset)
 4. [Usage](#usage)
 5. [Contributing](#contributing)
 6. [License](#license)
