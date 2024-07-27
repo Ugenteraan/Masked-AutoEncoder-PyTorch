@@ -1,6 +1,6 @@
 # Table of Contents
 1. [Introduction](#introduction)
-2. [Experimental Results](#Experimental Results)
+2. [Experimental Results](#ExperimentalResults)
 3. [Usage](#usage)
 4. [Contributing](#contributing)
 5. [License](#license)
