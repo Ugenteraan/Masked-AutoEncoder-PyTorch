@@ -19,11 +19,11 @@ The MAE's training loss is as shown below.
 
 <div align="center"> 
 <b>Training loss of MAE</b>
-    <figure class="image">
-      <img src="readme_images/train_loss_mae.png" width="400", height="400">
-      <figcaption>Loss over 1100 epochs</figcaption>
-    </figure>
 </div>
+<figure class="image">
+  <img src="readme_images/train_loss_mae.png" width="400">
+  <div align="center"><figcaption>Loss over 1100 epochs</figcaption></div>
+</figure>
 
 
 ## Pretraining the MAE
