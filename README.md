@@ -27,21 +27,25 @@ The MAE's training loss is as shown below. The loss is not smooth due to the use
 
 Meanwhile, the reconstructions output of MAE were plotted every 2 epochs. All the reconstructions can be found in the ```train_reconstructions``` folder. Figure below shows the reconstruction result on the first epoch and the last epoch.
 
-<div align="center"> 
-  <b>Training Loss of MAE</b>
-</div>
-<figure class="image">
-  <div style="display: flex; justify-content: center;">
-    <div align="center" style="margin: 0 10px;">
-      <img src="train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="200">
-      <figcaption>First epoch's reconstruction result.</figcaption>
-    </div>
-    <div align="center" style="margin: 0 10px;">
-      <img src="train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="200">
-      <figcaption>Final epoch's reconstruction result.</figcaption>
-    </div>
-  </div>
-</figure>
+<!--<div align="center"> -->
+<!--  <b>Training Loss of MAE</b>-->
+<!--</div>-->
+<!--<figure class="image">-->
+<!--  <div style="display: flex; justify-content: center;">-->
+<!--    <div align="center" style="margin: 0 10px;">-->
+<!--      <img src="train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG" width="200">-->
+<!--      <figcaption>First epoch's reconstruction result.</figcaption>-->
+<!--    </div>-->
+<!--    <div align="center" style="margin: 0 10px;">-->
+<!--      <img src="train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG" width="200">-->
+<!--      <figcaption>Final epoch's reconstruction result.</figcaption>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</figure>-->
+
+| ![Loss over 1100 epochs - Image 1](train_reconstructions/9c5eb558-5edf-4695-a2c1-babce3781b71.PNG) | ![Loss over 1100 epochs - Image 2](train_reconstructions/9c678920-2a2a-47e0-af6a-a05cc528ccc0.PNG) |
+|:--:|:--:|
+| Loss over 1100 epochs - Image 1 | Loss over 1100 epochs - Image 2 |
 
 It is evident that the MAE was learning as intended. However, I could not get a really nice reconstruction as reported in the paper probably due to the size of my dataset and the relatively small architecture of MAE.
 
