@@ -1,6 +1,6 @@
 # Table of Contents
 1. [Introduction](#introduction)
-2. [Experimental Results](#ExperimentalResults)
+2. [Experimental Results](#experimentalresults)
 3. [Usage](#usage)
 4. [Contributing](#contributing)
 5. [License](#license)
@@ -12,7 +12,7 @@ This project is an unofficial implementation of [MAE](https://arxiv.org/pdf/2111
 
 The idea of MAE is to leverage a huge set of unlabelled data (images) to learn rich representations of the dataset. These learned representations can then be utilized in downstream tasks such as classification, clustering, image segmentation, or anomaly detection, significantly enhancing performance by providing a strong, pre-trained feature extractor that adapts well to various applications.
 
-# Experimental Results
+# Experimental Results <a name="experimentalresults"></a>
 
 ## Dataset
 I segregated the dataset from [Kaggle's Doges 77 Breeds](https://www.kaggle.com/datasets/madibokishev/doges-77-breeds) into three parts. About 10k images (labelled) to train the downstream classification part. About 5k images (labelled) to be used for testing/evaluating the final downstream-ed model. And, lastly the remaining data (labels removed) to train the MAE itself without any labels (about 300k+ images). There were also a few thousands of random dog pictures included in this last set.
